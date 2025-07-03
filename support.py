@@ -36,21 +36,11 @@ def analyze(pts):
     death_mat = np.zeros((n_steps, n_steps))
     
     for i in range(n_steps):
+        min_dist = compute_dist(t_pts[i], pts)
         for j in range(i, n_steps):
+            np.minimum(min_dist, compute_dist(t_pts[j], pts), out=min_dist)
             a = t_pts[i]
             b = t_pts[j]
-            
-            min_dist = None
-            int_times = np.arange(a, b + DELTA, DELTA)
-            
-            for t in int_times:
-                if t > T_MAX:
-                    break
-                new_dist = compute_dist(t, pts)
-                if min_dist is None:
-                    min_dist = new_dist
-                else:
-                    np.minimum(min_dist, new_dist, out=min_dist)
             
             h1_result = compute_Hn(min_dist)
             
