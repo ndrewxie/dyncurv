@@ -37,6 +37,7 @@ if __name__ == "__main__":
     print(f"d2(V, W) = {d2:.4f}")
     print(f"dI(V, W) = {di:.4f}")
     d2_end = time.perf_counter()
+    print(f"d2 computation took {(d2_end - d2_start):.4f}")
 
     if not args.no_plot:
         print("Plotting")

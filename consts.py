@@ -23,7 +23,7 @@ x_pts = [
     lambda t: np.array([0.0, -1.0])
 ]
 y_pts = [
-    lambda t: np.array([1.25, 0.0]),
+    lambda t: np.array([1.7, 0.0]),
     lambda t: np.array([-1.0, 0.0]),
     lambda t: np.array([0.0, 1.0]), 
     lambda t: np.array([0.0, -1.0])
