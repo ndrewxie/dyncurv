@@ -1,2 +1,2 @@
-outputs/
+*.html
 __pycache__/
