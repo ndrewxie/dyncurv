@@ -1,8 +1,19 @@
 import numpy as np
+from dataclasses import dataclass, astuple
 
-T_MIN = 0
-T_MAX = 2
-DELTA = 0.02 # Currently, DELTA needs to divide (T_MAX - T_MIN). Might fix later
+@dataclass
+class TimeConstants:
+    T_MIN: float
+    T_MAX: float
+    DELTA: float
+
+    def __iter__(self): # Ty to https://stackoverflow.com/a/70753113/19459162
+        return iter(astuple(self))
+
+constants = TimeConstants(0, 2, 0.02)
+# T_MIN = 0
+# T_MAX = 2
+# DELTA = 0.02 # Currently, DELTA needs to divide (T_MAX - T_MIN). Might fix later
 
 # H_1 example
 x_pts = [

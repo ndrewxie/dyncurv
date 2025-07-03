@@ -3,7 +3,7 @@ import plotly.graph_objects as go
 import plotly.offline as pyo
 from datetime import datetime
 
-def create_box_mesh(a, b, birth, death):
+def create_box_mesh(a, b, birth, death, DELTA):
     x = [a, a+DELTA, a+DELTA, a, a, a+DELTA, a+DELTA, a]
     y = [b, b, b+DELTA, b+DELTA, b, b, b+DELTA, b+DELTA]
     z = [birth, birth, birth, birth, death, death, death, death]
@@ -15,23 +15,20 @@ def create_box_mesh(a, b, birth, death):
     return x, y, z, i, j, k
 
 def plot_3d(birth_mat, death_mat, color):
+    T_MIN, T_MAX, DELTA = constants
+
     t_pts = np.arange(T_MIN, T_MAX + DELTA, DELTA)
-    n_steps = len(t_pts)
     
     all_x, all_y, all_z = [], [], []
     all_i, all_j, all_k = [], [], []
     
     v_offset = 0
-    for i in range(n_steps):
-        for j in range(i, n_steps):
-            birth = birth_mat[i, j]
-            death = death_mat[i, j]
+    for birth_row, death_row, a in zip(birth_mat, death_mat, t_pts):
+        for birth, death, b in zip(birth_row, death_row, t_pts):
             
             if birth < death:
-                a = t_pts[i]
-                b = t_pts[j]
                 
-                x, y, z, idx_i, idx_j, idx_k = create_box_mesh(a, b, birth, death)
+                x, y, z, idx_i, idx_j, idx_k = create_box_mesh(a, b, birth, death, DELTA)
                 
                 all_x.extend(x)
                 all_y.extend(y)
@@ -81,6 +78,8 @@ def plot_data(birth_mat_x, death_mat_x, birth_mat_y, death_mat_y):
         trace.name = "Y Points"
         fig.add_trace(trace)
     
+    T_MIN, T_MAX, DELTA = constants
+
     t_pts = np.arange(T_MIN, T_MAX + DELTA, DELTA)
     n_steps = len(t_pts)
     support_x_pts = [(t_pts[i], t_pts[j]) 
