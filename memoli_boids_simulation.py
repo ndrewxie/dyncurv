@@ -248,4 +248,3 @@ if __name__ == '__main__':
     print("Animation saved")
     # Doing plt.show() clears figure, so doing it before saving animation loses first 1000 frames for mp4 file
     # plt.show()
-

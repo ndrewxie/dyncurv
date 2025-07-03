@@ -15,6 +15,21 @@ constants = TimeConstants(0, 2, 0.02)
 # T_MAX = 2
 # DELTA = 0.02 # Currently, DELTA needs to divide (T_MAX - T_MIN). Might fix later
 
+# Static case to test d_2
+x_pts = [
+    lambda t: np.array([1.0, 0.0]),
+    lambda t: np.array([-1.0, 0.0]),
+    lambda t: np.array([0.0, 1.0]), 
+    lambda t: np.array([0.0, -1.0])
+]
+y_pts = [
+    lambda t: np.array([1.25, 0.0]),
+    lambda t: np.array([-1.0, 0.0]),
+    lambda t: np.array([0.0, 1.0]), 
+    lambda t: np.array([0.0, -1.0])
+]
+
+"""
 # H_1 example
 x_pts = [
     lambda t: np.array([1.0 + (0.5 * t if t <= 1.0 else 0.5 + 0.75 * (t - 1.0)), 0.0]),
@@ -28,6 +43,7 @@ y_pts = [
     lambda t: np.array([0.0, 1.0 + np.sin(np.pi * t)]), 
     lambda t: np.array([0.0, -1.0])
 ]
+"""
 
 """
 # H_2 example

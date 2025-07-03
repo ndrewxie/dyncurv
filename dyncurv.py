@@ -5,18 +5,7 @@ import sys
 from consts import *
 from viz import plot_data
 from support import analyze
-
-
-# Credit to https://stackoverflow.com/questions/64980270/how-to-allow-only-positive-integer-using-argparse
-def check_positive(value: str):
-    try:
-        value = int(value)
-        if value <= 0:
-            raise argparse.ArgumentTypeError(f"{value} is not a positive float")
-    except ValueError:
-        raise Exception(f"{value} is not a float")
-    return value
-
+from d2 import *
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="dyncurv", description="Script used to generate support of DMS given by Python functions and NOT boids text file")
@@ -41,6 +30,13 @@ if __name__ == "__main__":
     birth_mat_y, death_mat_y = analyze(y_pts)
     analyze_end = time.perf_counter()
     print(f"Support computation took {(analyze_end - analyze_start):.4f}")
+
+    d2_start = time.perf_counter()
+    d2 = compute_d2(birth_mat_x, death_mat_x, birth_mat_y, death_mat_y)
+    di = compute_static_dI(0.0)
+    print(f"d2(V, W) = {d2:.4f}")
+    print(f"dI(V, W) = {di:.4f}")
+    d2_end = time.perf_counter()
 
     if not args.no_plot:
         print("Plotting")
