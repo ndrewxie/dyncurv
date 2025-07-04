@@ -81,7 +81,7 @@ def plot_data(birth_mat_x, death_mat_x, birth_mat_y, death_mat_y):
     T_MIN, T_MAX, DELTA = constants
 
     t_pts = np.arange(T_MIN, T_MAX + DELTA, DELTA)
-    n_steps = len(t_pts)
+    n_steps = len(t_pts)    
     support_x_pts = [(t_pts[i], t_pts[j]) 
                     for i in range(n_steps) 
                     for j in range(i, n_steps) if birth_mat_x[i, j] < death_mat_x[i, j]]
@@ -119,4 +119,4 @@ def plot_data(birth_mat_x, death_mat_x, birth_mat_y, death_mat_y):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"./outputs/output_{(len(x_pts) - 2)//2}_{timestamp}.html"
     fig.write_html(filename)
-    #fig.show()
+    #\fig.show()

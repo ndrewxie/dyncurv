@@ -10,7 +10,7 @@ class TimeConstants:
     def __iter__(self): # Ty to https://stackoverflow.com/a/70753113/19459162
         return iter(astuple(self))
 
-constants = TimeConstants(0, 2, 0.02)
+constants = TimeConstants(0, 1, 0.05)
 # T_MIN = 0
 # T_MAX = 2
 # DELTA = 0.02 # Currently, DELTA needs to divide (T_MAX - T_MIN). Might fix later

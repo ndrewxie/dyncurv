@@ -6,6 +6,7 @@ from consts import *
 from viz import plot_data
 from support import analyze
 from d2 import *
+from dE import *
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="dyncurv", description="Script used to generate support of DMS given by Python functions and NOT boids text file")
@@ -21,6 +22,9 @@ if __name__ == "__main__":
     if constants.T_MAX < constants.T_MIN:
         print("Error: t_min must be less than or equal to t_max")
         sys.exit(1)
+
+
+    #gpt_test1(100, 25)
     
     print("Computing support")
     analyze_start = time.perf_counter()
@@ -33,13 +37,19 @@ if __name__ == "__main__":
 
     d2_start = time.perf_counter()
     d2 = compute_d2(birth_mat_x, death_mat_x, birth_mat_y, death_mat_y)
-    di = compute_static_dI(0.0)
     print(f"d2(V, W) = {d2:.4f}")
-    print(f"dI(V, W) = {di:.4f}")
     d2_end = time.perf_counter()
     print(f"d2 computation took {(d2_end - d2_start):.4f}")
 
-    if not args.no_plot:
-        print("Plotting")
-        plot_data(birth_mat_x, death_mat_x, birth_mat_y, death_mat_y)
-    input("Press any key to exit")
+    di = compute_static_dI(0.0)
+    print(f"dI(V, W) = {di:.4f}")
+
+    dE = compute_dE(birth_mat_x, death_mat_x, birth_mat_y, death_mat_y)
+    print(f"dE(V, W) = {dE:.4f}")
+    dE_end = time.perf_counter()
+    print(f"dE computation took {(dE_end - d2_end):.4f}")
+
+    #if not args.no_plot:
+        #print("Plotting")
+        #plot_data(birth_mat_x, death_mat_x, birth_mat_y, death_mat_y)
+    #input("Press any key to exit")
