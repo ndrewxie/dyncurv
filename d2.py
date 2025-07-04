@@ -33,12 +33,9 @@ def compute_max_rad(i, j, seg, birth_mat_v, death_mat_v, curr_high):
     m = len(birth_mat_v)
     n = len(birth_mat_v[0])
 
-    low = 0
+    low = curr_high+1
     high = min((j - i)//2, n - j - 1, i)
-
-    if high * constants.DELTA < curr_high:
-        return 0.0
-
+    
     max_rad = 0
     while low <= high:
         mid = low + (high-low)//2
@@ -57,7 +54,7 @@ def compute_max_rad(i, j, seg, birth_mat_v, death_mat_v, curr_high):
             low = mid + 1
         else:
             high = mid - 1
-    return max_rad * constants.DELTA
+    return max_rad
 
 def compute_left_d2(birth_mat_v, death_mat_v, birth_mat_w, death_mat_w):
     m = len(birth_mat_v)
@@ -72,7 +69,7 @@ def compute_left_d2(birth_mat_v, death_mat_v, birth_mat_w, death_mat_w):
                 continue
             max_rad = compute_max_rad(i, j, delta, birth_mat_v, death_mat_v, max_d2)
             max_d2 = max(max_d2, max_rad)
-    return max_d2
+    return max_d2 * constants.DELTA
 
 def compute_d2(birth_mat_v, death_mat_v, birth_mat_w, death_mat_w):
     return max(

@@ -113,10 +113,8 @@ def compute_dE(birth_mat_v, death_mat_v, birth_mat_w, death_mat_w):
 
     eps = 0
     n = len(birth_mat_v)
-    print("following value is n")
-    print(n)
     d = constants.DELTA
-    scalemax = 3
+    scalemax = max(death_mat_v.max(), death_mat_w.max())
 
     support_v = make_3d_lifespan_mask(birth_mat_v, death_mat_v, 0, scalemax, d)
     support_w = make_3d_lifespan_mask(birth_mat_w, death_mat_w, 0, scalemax, d)

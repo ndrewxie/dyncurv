@@ -28,9 +28,7 @@ if __name__ == "__main__":
     
     print("Computing support")
     analyze_start = time.perf_counter()
-    # print("X") # I think these prints are affecting the counter a bit
     birth_mat_x, death_mat_x = analyze(x_pts)
-    # print("Y")
     birth_mat_y, death_mat_y = analyze(y_pts)
     analyze_end = time.perf_counter()
     print(f"Support computation took {(analyze_end - analyze_start):.4f}")
@@ -44,10 +42,11 @@ if __name__ == "__main__":
     di = compute_static_dI(0.0)
     print(f"dI(V, W) = {di:.4f}")
 
+    dE_start = time.perf_counter()
     dE = compute_dE(birth_mat_x, death_mat_x, birth_mat_y, death_mat_y)
     print(f"dE(V, W) = {dE:.4f}")
     dE_end = time.perf_counter()
-    print(f"dE computation took {(dE_end - d2_end):.4f}")
+    print(f"dE computation took {(dE_end - dE_start):.4f}")
 
     #if not args.no_plot:
         #print("Plotting")
