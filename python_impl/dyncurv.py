@@ -8,11 +8,23 @@ from support import analyze
 from d2 import *
 from dE import *
 
+
+# Credit to https://stackoverflow.com/questions/64980270/how-to-allow-only-positive-integer-using-argparse
+def check_positive(value: str):
+    try:
+        value = int(value)
+        if value <= 0:
+            raise argparse.ArgumentTypeError(f"{value} is not a positive float")
+    except ValueError:
+        raise Exception(f"{value} is not a float")
+    return value
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="dyncurv", description="Script used to generate support of DMS given by Python functions and NOT boids text file")
-    parser.add_argument("-t0", "--t_min", type=float, help="Smallest time value to consider for intervals")
-    parser.add_argument("-t1", "--t_max", type=float, help="Largest time value to consider for intervals")
-    parser.add_argument("-d", "--delta", type=float, help="Step size to increment by from t_min to t_max")
+    parser.add_argument("-t0", "--t_min", type=check_positive, help="Smallest time value to consider for intervals")
+    parser.add_argument("-t1", "--t_max", type=check_positive, help="Largest time value to consider for intervals")
+    parser.add_argument("-d", "--delta", type=check_positive, help="Step size to increment by from t_min to t_max")
     parser.add_argument("-np", "--no-plot", help="Flag to not plot support", action="store_true")
     args = parser.parse_args()
 
