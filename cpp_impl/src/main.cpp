@@ -12,21 +12,20 @@ using namespace std;
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
-        cout << "Usage: " << argv[0] << " <n_files> <file1> ..." << endl;
+        cout << "Usage: " << argv[0] << " <output_file> <in_file_1> ..." << endl;
         return 1;
     }
-
-    int n_files = stoi(argv[1]);
-
     cout << "Reading data and computing supports..." << endl;
+
+    ofstream out_file(argv[1]);
 
     vector<double> scale_deltas;
     vector<DynPointCloud> data;
     vector<Support> supports;
-    for (int file_index = 0; file_index < n_files; file_index++) {
-        ifstream in_file(argv[file_index+2]);
+    for (int argv_index = 2; argv_index < argc; argv_index++) {
+        ifstream in_file(argv[argv_index]);
         if (!in_file.is_open()) {
-            cout << "Error: cannot open " << argv[file_index+2] << endl;
+            cout << "Error: cannot open " << argv[argv_index] << endl;
             return 1;
         }
         double scale_delta;
@@ -59,8 +58,10 @@ int main(int argc, char* argv[]) {
 
     cout << "Computing pairwise d2..." << endl;
 
+    int n_files = data.size();
     vector<vector<double>> d2_matrix(n_files, vector<double>(n_files, 0.0));
     for (int i = 0; i < n_files; i++) {
+        cout << "Computing distances for " << i << endl;
         for (int j = i+1; j < n_files; j++) {
             double dist = compute_d2(supports[i], supports[j], scale_deltas[i], scale_deltas[j]);
             d2_matrix[i][j] = dist;
@@ -70,9 +71,10 @@ int main(int argc, char* argv[]) {
 
     for (const auto& row : d2_matrix) {
         for (const auto& elem : row) {
-            std::cout << std::setw(8) << std::fixed << std::setprecision(2) << elem << " ";
+            out_file << elem << "\t";
         }
-        std::cout << std::endl;
+        out_file << endl;
     }
+    out_file.close();
     return 0;
 }

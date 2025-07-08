@@ -18,38 +18,34 @@ IntervalArr subtract_ints(Interval i1, Interval i2) {
     double a1 = i1.first, b1 = i1.second;
     double a2 = i2.first, b2 = i2.second;
 
-    if (a1 > b1) {
+    if (a1 >= b1) {
+        return { empty, empty };
+    }
+    if (a2 <= a1 && b1 <= b2) {
         return { empty, empty };
     }
     if (a2 > b2 || b2 < a1 || a2 > b1) {
         return { i1, empty };
     }
-    if (a2 <= a1 && b1 <= b2) {
-        return { empty, empty };
-    }
     IntervalArr segments = { empty, empty };
-    int n = 0;
     if (a1 < a2) {
-        segments[n] = make_pair(a1, min(b1, a2));
-        n += 1;
+        segments[0] = make_pair(a1, min(b1, a2));
     }
     if (b2 < b1) {
-        segments[n] = make_pair(max(a1, b2), b1);
-        n += 1;
+        segments[1] = make_pair(max(a1, b2), b1);
     }
     return segments;
 }
 
-bool filter_intervals(IntervalArr& segs, Interval range1, Interval range2, bool write) {
+template<bool should_write>
+bool filter_intervals(IntervalArr& segs, Interval range1, Interval range2) {
     bool ret_val = false;
     for (int i = 0; i < segs.size(); i++) {
-        double low1 = max(range1.first, segs[i].first);
-        double high1 = min(range1.second, segs[i].second);
-        double low2 = max(range2.first, low1);
-        double high2 = min(range2.second, high1);
-        ret_val = ret_val || (low2 < high2);        
-        if (write) {
-            segs[i] = make_pair(low2, high2);
+        double low = max(segs[i].first, max(range1.first, range2.first));
+        double high = min(segs[i].second, min(range1.second, range2.second));
+        ret_val = ret_val | (low < high);        
+        if (should_write) {
+            segs[i] = make_pair(low, high);
         }
     }
     return ret_val;
@@ -76,7 +72,7 @@ double compute_max_rad(
             sup_w[i-mid][j+mid].first - sd_w * midf, 
             sup_w[i-mid][j+mid].second - sd_w * midf
         );
-        bool is_nonempty = filter_intervals(seg, mid_seg_low, mid_seg_high, false);
+        bool is_nonempty = filter_intervals<false>(seg, mid_seg_low, mid_seg_high);
         if (is_nonempty) {
             max_rad = mid;
             low = mid + 1;
@@ -102,7 +98,7 @@ double compute_left_d2(Support& sup_v, Support& sup_w, double sd_v, double sd_w)
             Interval int_v = make_pair(sup_v[i][j].first, sup_v[i][j].second);
             Interval int_w = make_pair(sup_w[i][j].first, sup_w[i][j].second);
             IntervalArr delta = subtract_ints(int_v, int_w);
-            bool delta_nonempty = filter_intervals(delta, full, full, true);
+            bool delta_nonempty = filter_intervals<true>(delta, full, full);
             if (!delta_nonempty) { continue; } 
             double max_rad = compute_max_rad(i, j, delta, sup_v, sup_w, max_d2, sd_v, sd_w);
             max_d2 = max(max_d2, max_rad);

@@ -1,7 +1,7 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall
+CXXFLAGS = -std=c++17 -Wall -g
 CXXDEBUGFLAGS = -O0 -fsanitize=address -fsanitize=undefined
-CXXRELEASEFLAGS = -O3
+CXXRELEASEFLAGS = -O3 -fassociative-math
 
 dyncurv: src/*
 	$(CXX) $(CXXFLAGS) $(CXXDEBUGFLAGS) src/main.cpp
