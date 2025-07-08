@@ -56,7 +56,7 @@ bool filter_intervals(IntervalArr& segs, Interval range1, Interval range2, bool 
 }
 
 double compute_max_rad(
-    int i, int j, IntervalArr seg, Support& sup_v, Support& sup_w, int curr_high, double scale_delta
+    int i, int j, IntervalArr seg, Support& sup_v, Support& sup_w, int curr_high, double sd_v, double sd_w
 ) {
     int m = sup_v.size();
     int n = sup_v[0].size();
@@ -69,12 +69,12 @@ double compute_max_rad(
         int mid = low + (high-low)/2;
         double midf = double(mid);
         Interval mid_seg_low = make_pair(
-            sup_v[i+mid][j-mid].first + scale_delta * midf, 
-            sup_v[i+mid][j-mid].second + scale_delta * midf
+            sup_v[i+mid][j-mid].first + sd_v * midf, 
+            sup_v[i+mid][j-mid].second + sd_v * midf
         );
         Interval mid_seg_high = make_pair(
-            sup_w[i-mid][j+mid].first - scale_delta * midf, 
-            sup_w[i-mid][j+mid].second - scale_delta * midf
+            sup_w[i-mid][j+mid].first - sd_w * midf, 
+            sup_w[i-mid][j+mid].second - sd_w * midf
         );
         bool is_nonempty = filter_intervals(seg, mid_seg_low, mid_seg_high, false);
         if (is_nonempty) {
@@ -88,7 +88,7 @@ double compute_max_rad(
     return max_rad;
 }
 
-double compute_left_d2(Support& sup_v, Support& sup_w, double scale_delta) {
+double compute_left_d2(Support& sup_v, Support& sup_w, double sd_v, double sd_w) {
     assert(sup_v.size() == sup_w.size());
     assert(sup_v[0].size() == sup_w[0].size());
 
@@ -104,17 +104,17 @@ double compute_left_d2(Support& sup_v, Support& sup_w, double scale_delta) {
             IntervalArr delta = subtract_ints(int_v, int_w);
             bool delta_nonempty = filter_intervals(delta, full, full, true);
             if (!delta_nonempty) { continue; } 
-            double max_rad = compute_max_rad(i, j, delta, sup_v, sup_w, max_d2, scale_delta);
+            double max_rad = compute_max_rad(i, j, delta, sup_v, sup_w, max_d2, sd_v, sd_w);
             max_d2 = max(max_d2, max_rad);
         }
     }
 
-    return max_d2 * scale_delta;
+    return max_d2 * sd_v;
 }
 
-double compute_d2(Support& sup_v, Support& sup_w, double scale_delta) {
+double compute_d2(Support& sup_v, Support& sup_w, double sd_v, double sd_w) {
     return max(
-        compute_left_d2(sup_v, sup_w, scale_delta),
-        compute_left_d2(sup_w, sup_v, scale_delta)
+        compute_left_d2(sup_v, sup_w, sd_v, sd_w),
+        compute_left_d2(sup_w, sup_v, sd_v, sd_w)
     );
 }
