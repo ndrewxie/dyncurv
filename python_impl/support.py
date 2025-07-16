@@ -14,13 +14,13 @@ def compute_Hn(dist_mat):
     else:
         return None
 
-def compute_dist(t, pts):
+def compute_dist(t, pts, metric=EUCLIDEAN):
     points = [pt(t) for pt in pts]
     pts_arr = np.array(points)
-    dist_mat = np.linalg.norm(pts_arr[:, None] - pts_arr[None, :], axis=2)
+    dist_mat = metric(pts_arr)
     return dist_mat
 
-def analyze(pts, sus_dumb_flag_aaaa=False):
+def analyze(pts, metric=EUCLIDEAN, file_flag=False):
     T_MIN, T_MAX, DELTA = constants
 
     t_pts = np.arange(T_MIN, T_MAX + DELTA, DELTA).tolist()
@@ -29,10 +29,10 @@ def analyze(pts, sus_dumb_flag_aaaa=False):
     birth_mat = np.zeros((n_steps, n_steps))
     death_mat = np.zeros((n_steps, n_steps))
 
-    if not sus_dumb_flag_aaaa:
-        dist_mats = [compute_dist(t, pts) for t in t_pts]  # O(n_steps**3), nothing can be done about that tbh
+    if not file_flag:
+        dist_mats = [compute_dist(t, pts, metric) for t in t_pts]  # O(n_steps**3), nothing can be done about that tbh
     else:
-        dist_mats = [np.linalg.norm(pts_t[:, None] - pts_t[None, :], axis=2) for pts_t in pts] # Same here
+        dist_mats = [metric(pts_t) for pts_t in pts] # Same here
     
     for i, min_dist in enumerate(dist_mats):
         for j, new_dist_mat in enumerate(dist_mats[i:], start=i):

@@ -54,13 +54,13 @@ if __name__ == "__main__":
     di = compute_static_dI(0.0)
     print(f"dI(V, W) = {di:.4f}")
 
-    dE_start = time.perf_counter()
-    dE = compute_dE(birth_mat_x, death_mat_x, birth_mat_y, death_mat_y)
-    print(f"dE(V, W) = {dE:.4f}")
-    dE_end = time.perf_counter()
-    print(f"dE computation took {(dE_end - dE_start):.4f}")
+    # dE_start = time.perf_counter()
+    # dE = compute_dE(birth_mat_x, death_mat_x, birth_mat_y, death_mat_y)
+    # print(f"dE(V, W) = {dE:.4f}")
+    # dE_end = time.perf_counter()
+    # print(f"dE computation took {(dE_end - dE_start):.4f}")
 
-    #if not args.no_plot:
-        #print("Plotting")
-        #plot_data(birth_mat_x, death_mat_x, birth_mat_y, death_mat_y)
+    if not args.no_plot:
+        print("Plotting")
+        plot_data(birth_mat_x, death_mat_x, birth_mat_y, death_mat_y)
     #input("Press any key to exit")

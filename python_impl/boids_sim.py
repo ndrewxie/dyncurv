@@ -6,49 +6,14 @@
 # -----------------------------------------------------------------------------
 #!/usr/bin/env python
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.path import Path
-from matplotlib.animation import FuncAnimation
-from matplotlib.collections import PathCollection
-import sys
+# import sys
 import os
-
-class MarkerCollection:
-    """
-    Marker collection
-    """
-
-    def __init__(self, n=100):
-        v = np.array([(-0.25, -0.25), (+0.0, +0.5), (+0.25, -0.25), (0, 0)])
-        c = np.array([Path.MOVETO, Path.LINETO, Path.LINETO, Path.CLOSEPOLY])
-        self._base_vertices = np.tile(v.reshape(-1), n).reshape(n, len(v), 2)
-        self._vertices = np.tile(v.reshape(-1), n).reshape(n, len(v), 2)
-        self._codes = np.tile(c.reshape(-1), n)
-
-        self._scale = np.ones(n)
-        self._translate = np.zeros((n, 2))
-        self._rotate = np.zeros(n)
-
-        self._path = Path(vertices=self._vertices.reshape(n*len(v), 2),
-                          codes=self._codes)
-        self._collection = PathCollection([self._path], linewidth=0.5,
-                                          facecolor="k", edgecolor="w")
-
-    def update(self):
-        n = len(self._base_vertices)
-        self._vertices[...] = self._base_vertices * self._scale
-        cos_rotate, sin_rotate = np.cos(self._rotate), np.sin(self._rotate)
-        R = np.empty((n, 2, 2))
-        R[:, 0, 0] = cos_rotate
-        R[:, 1, 0] = sin_rotate
-        R[:, 0, 1] = -sin_rotate
-        R[:, 1, 1] = cos_rotate
-        self._vertices[...] = np.einsum('ijk,ilk->ijl', self._vertices, R)
-        self._vertices += self._translate.reshape(n, 1, 2)
+import argparse
 
 
 class Flock:
-    def __init__(self, count=500, width=500, height=250):
+    def __init__(self, count=500, sep=1, ali=1, coh=1, sep_rad=50, ali_rad=100, coh_rad=150, width=500, height=250):
+        self.num_pts = count
         self.width = width
         self.height = height
         self.min_velocity = 0.5
@@ -65,10 +30,15 @@ class Flock:
         self.position[:, 0] = width/2 + np.cos(angle)*radius
         self.position[:, 1] = height/2 + np.sin(angle)*radius
 
+        self.sep = sep
+        self.ali = ali
+        self.coh = coh
+        self.sep_rad = sep_rad
+        self.ali_rad = ali_rad
+        self.coh_rad = coh_rad
 
-    def run(self):
 
-        global distance, counter, sep, ali, coh
+    def step(self):
 
         position = self.position
         velocity = self.velocity
@@ -78,16 +48,16 @@ class Flock:
         n = len(position)
 
         dx = np.absolute(np.subtract.outer(position[:, 0], position[:, 0]))
-        dx = np.minimum(dx, self.width-dx)
+        # dx = np.minimum(dx, self.width-dx)
         dy = np.absolute(np.subtract.outer(position[:, 1], position[:, 1]))
-        dy = np.minimum(dy, self.height-dy)
+        # dy = np.minimum(dy, self.height-dy)
         distance = np.hypot(dx, dy)
 
         # Compute common distance masks
         mask_0 = (distance > 0)
-        mask_1 = (distance < seprad)
-        mask_2 = (distance < alirad)
-        mask_3 = (distance < cohrad)
+        mask_1 = (distance < self.sep_rad)
+        mask_2 = (distance < self.ali_rad)
+        mask_3 = (distance < self.coh_rad)
         mask_1 *= mask_0
         mask_2 *= mask_0
         mask_3 *= mask_0
@@ -150,7 +120,7 @@ class Flock:
         cohesion = steer
 
         # ---------------------------------------------------------------------
-        acceleration = sep*separation + ali*alignment + coh*cohesion
+        acceleration = self.sep*separation + self.ali*alignment + self.coh*cohesion
         velocity += acceleration
 
         norm = np.sqrt((velocity*velocity).sum(axis=1)).reshape(n, 1)
@@ -161,93 +131,55 @@ class Flock:
         position += velocity
 
         # Wraparound
-        position += (self.width, self.height)
-        position %= (self.width, self.height)
+        # position += (self.width, self.height)
+        # position %= (self.width, self.height)
 
 
-def update(*args):
-    global flock, collection, trace, filename, distance, counter
-
-    # Flock updating
-    flock.run()
-    collection._scale = 10
-    collection._translate = flock.position
-    collection._rotate = -np.pi/2 + np.arctan2(flock.velocity[:, 1],
-                                               flock.velocity[:, 0])
-    collection.update()
-
-    #collect positions
-    f = open(filename, "a")
-    np.savetxt(f, flock.position, fmt='%.8f', newline='\n')
-    f.close()
-
-
-
-    # Trace updating
-    if trace is not None:
-        P = flock.position.astype(int)
-        trace[height-1-P[:, 1], P[:, 0]] = .75
-        trace *= .99
-        im.set_array(trace)
+    def simulate(self, num_steps, seed=None, filename=None):
+        if seed is not None:
+            np.random.seed(seed)
+        if filename is not None:
+            f = open(filename, "a")
+            f.write(f"{self.num_pts}\n{self.width} {self.height}\n")
+        for _ in range(num_steps):
+            self.step()
+            if filename is not None:
+                np.savetxt(f, self.position, fmt='%.8f', newline='\n')
+        if filename is not None:
+            f.close()
 
 
 
 # -----------------------------------------------------------------------------
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(prog="boids_sim", description="Script used to simulate boids quickly")
+    parser.add_argument("outfile", type=str, help="Output file to save data to")
+    parser.add_argument("num_pts", type=int, help="Number of points in simulation")
+    parser.add_argument("sep", type=float, help="Separation parameter used in motion calculations")
+    parser.add_argument("ali", type=float, help="Alignment parameter used in motion calculations")
+    parser.add_argument("coh", type=float, help="Cohesion parameter used in motion calculations")
+    parser.add_argument("-ns", "--num_steps", default=500, type=int, help="Number of steps to run simulation")
+    parser.add_argument("-sr", "--sep_rad", default=50, type=float, help="Separation radius used in motion calculations")
+    parser.add_argument("-ar", "--ali_rad", default=100, type=float, help="Alignment radius used in motion calculations")
+    parser.add_argument("-cr", "--coh_rad", default=150, type=float, help="Cohesion radius used in motion calculations")
+    # parser.add_argument("-w", "--width", default=500, type=int, help="Width of toroidal enviornment")
+    # parser.add_argument("-h", "--height", default=250, type=int, help="Cohesion radius used in motion calculations")
+    args = parser.parse_args()
 
-    global sep, ali, coh, seprad, alirad, cohrad, filename
-    seed = np.random.randint(0, 1<<31)
-    print(seed)
-    np.random.seed(seed)
-
-    if len(sys.argv) == 6:
-        n = int(sys.argv[1])
-        sep = float(sys.argv[2])
-        ali = float(sys.argv[3])
-        coh = float(sys.argv[4])
-        seprad = 50
-        alirad = 100
-        cohrad = 150
-        filename = str(sys.argv[5])
-    elif len(sys.argv) == 9:
-        n = int(sys.argv[1])
-        sep = float(sys.argv[2])
-        seprad = float(sys.argv[3])
-        ali = float(sys.argv[4])
-        alirad = float(sys.argv[5])
-        coh = float(sys.argv[6])
-        cohrad = float(sys.argv[7])
-        filename = str(sys.argv[8])
-    else:
-        print('Please input either 5 or 8 arguments: (to allow different input types, alter code at top of main)')
-        print('number of points, separation, alignment, cohesion, outfile')
-        print('number of points, separation, sep radius, alignment, ali radius, cohesion, coh radius, outfile')
-        exit()
-
-    if os.path.exists(filename):
-        os.remove(filename)
-    if os.path.exists(filename+"_animation.mp4"):
-        os.remove(filename+"_animation.mp4")
+    num_pts = args.num_pts
+    sep = args.sep
+    ali = args.ali
+    coh = args.coh
+    sep_rad = args.sep_rad
+    ali_rad = args.ali_rad
+    coh_rad = args.coh_rad
+    num_steps = args.num_steps
+    outfile = args.outfile # if args.outfile else f"{sep}_{ali}_{coh}"
     
-    width, height = 500, 250
-    with open(filename, 'w') as outfile:
-        outfile.write(str(n) + '\n')
-        outfile.write(f"{width} {height}\n")
-    flock = Flock(n)
-    collection = MarkerCollection(n)
-    trace = None
+    if os.path.exists(outfile):
+        os.remove(outfile)
 
-    fig = plt.figure(figsize=(10, 10*height/width), facecolor="white")
-    ax = fig.add_axes([0.0, 0.0, 1.0, 1.0], aspect=1, frameon=False)
-    ax.add_collection(collection._collection)
-    ax.set_xlim(0, width)
-    ax.set_ylim(0, height)
-    ax.set_xticks([])
-    ax.set_yticks([])
-
-
-    animation = FuncAnimation(fig, update, interval=50, frames=1000, repeat=False)
-    animation.save(filename + '_animation.mp4', fps=20)
-    print("Animation saved")
-    # Doing plt.show() clears figure, so doing it before saving animation loses first 1000 frames for mp4 file
-    # plt.show()
+    # seed = np.random.randint(0, 1<<31)
+    # if not outfile: outfile = f"boids_{seed}.txt"
+    flock = Flock(num_pts, sep, sep_rad, ali, ali_rad, coh, coh_rad)
+    flock.simulate(num_steps, filename=outfile)

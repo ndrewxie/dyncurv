@@ -32,16 +32,16 @@ def make_3d_lifespan_mask(birth: np.ndarray,
         for j in range(0, n):
             for k in range(0, K):
                 if(arr[i][j][k] == 1):
-                    assert (birth[i][j] <= d0 + k*delta and d0 + k*delta <= death[i][j])
+                    assert (birth[i][j] <= d0 + k*delta <= death[i][j])
                 else:
-                    assert not (birth[i][j] <= d0 + k*delta and d0 + k*delta <= death[i][j])
+                    assert not (birth[i][j] <= d0 + k*delta <= death[i][j])
 
     return arr
 
 def compute_dE(birth_mat_v, death_mat_v, birth_mat_w, death_mat_w):
 
     d = constants.DELTA
-    scalemax = 6
+    scalemax = max(death_mat_v.max(), death_mat_w.max())+2*d
 
     support_v = make_3d_lifespan_mask(birth_mat_v, death_mat_v, 0, scalemax, d)
     support_w = make_3d_lifespan_mask(birth_mat_w, death_mat_w, 0, scalemax, d)
@@ -52,7 +52,7 @@ def compute_dE(birth_mat_v, death_mat_v, birth_mat_w, death_mat_w):
     down_v = np.zeros((n1, n2, n3))
     down_w = np.zeros((n1, n2, n3))
 
-    for i in range(n1-1, 0, -1):
+    for i in range(n1-1, -1, -1):
         for j in range(i, n2):
             for k in range(0, n3):
                 if(k > 0):
@@ -67,11 +67,11 @@ def compute_dE(birth_mat_v, death_mat_v, birth_mat_w, death_mat_w):
     for i in range(0, n1):
         for j in range(n2-1, i-1, -1):
             for k in range(n3-1, -1, -1):
-                if(i <= j and k >= 0 and i > 0 and j < n2-1 and k < n3-1):
+                if(k < n3-1):
                     if(support_v[i][j][k] == 1 and support_w[i][j][k] == 0):
-                        up_v[i][j][k] = up_v[i-1][j+1][k+1]+1
+                        up_v[i][j][k] = up_v[i-1 if i>0 else 0][j+1 if j<n2-1 else j][k+1]+1
                     if(support_v[i][j][k] == 0 and support_w[i][j][k] == 1):
-                        up_w[i][j][k] = up_w[i-1][j+1][k+1]+1
+                        up_w[i][j][k] = up_w[i-1 if i>0 else 0][j+1 if j<n2-1 else j][k+1]+1
 
     suff_v = np.zeros((n1, n2, n3))
     suff_w = np.zeros((n1, n2, n3))
