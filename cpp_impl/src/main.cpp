@@ -7,6 +7,7 @@
 
 #include "support.hpp"
 #include "d2.hpp"
+#include "dE.hpp"
 
 using namespace std;
 
@@ -75,6 +76,26 @@ int main(int argc, char* argv[]) {
         }
         out_file << endl;
     }
+
+    cout << "Computing pairwise dE..." << endl;
+
+    vector<vector<double>> dE_matrix(n_files, vector<double>(n_files, 0.0));
+    for (int i = 0; i < n_files; i++) {
+        cout << "Computing distances for " << i << endl;
+        for (int j = i+1; j < n_files; j++) {
+            double dist = compute_dE(supports[i], supports[j], scale_deltas[i], scale_deltas[j]);
+            dE_matrix[i][j] = dist;
+            dE_matrix[j][i] = dist;
+        }
+    }
+
+    for (const auto& row : dE_matrix) {
+        for (const auto& elem : row) {
+            out_file << elem << "\t";
+        }
+        out_file << endl;
+    }
+
     out_file.close();
     return 0;
 }
