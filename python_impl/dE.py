@@ -79,12 +79,12 @@ def compute_dE(birth_mat_v, death_mat_v, birth_mat_w, death_mat_w):
     for i in range(0, n1):
         for j in range(n2-1, i-1, -1):
             for k in range(n3-1, -1, -1):
-                imax_v = up_v[i-1][j][k] if i > 0 else up_v[i][j][k]
-                jmax_v = up_v[i][j+1][k] if j < n2-1 else up_v[i][j][k]
-                kmax_v = up_v[i][j][k+1] if k < n3-1 else up_v[i][j][k]
-                imax_w = up_w[i-1][j][k] if i > 0 else up_w[i][j][k]
-                jmax_w = up_w[i][j+1][k] if j < n2-1 else up_w[i][j][k]
-                kmax_w = up_w[i][j][k+1] if k < n3-1 else up_w[i][j][k]
+                imax_v = suff_v[i-1][j][k] if i > 0 else up_v[i][j][k]
+                jmax_v = suff_v[i][j+1][k] if j < n2-1 else up_v[i][j][k]
+                kmax_v = suff_v[i][j][k+1] if k < n3-1 else up_v[i][j][k]
+                imax_w = suff_w[i-1][j][k] if i > 0 else up_w[i][j][k]
+                jmax_w = suff_w[i][j+1][k] if j < n2-1 else up_w[i][j][k]
+                kmax_w = suff_w[i][j][k+1] if k < n3-1 else up_w[i][j][k]
 
                 suff_v[i][j][k] = max(imax_v, jmax_v, kmax_v, up_v[i][j][k])
                 suff_w[i][j][k] = max(imax_w, jmax_w, kmax_w, up_w[i][j][k])
