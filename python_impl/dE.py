@@ -94,6 +94,6 @@ def compute_dE(birth_mat_v, death_mat_v, birth_mat_w, death_mat_w):
         for j in range(i, n2):
             for k in range(0, n3):
                 shift = max(shift, min(down_v[i][j][k], suff_v[i][j][k]), min(down_w[i][j][k], suff_w[i][j][k]))
-                            
+    
     return shift * d
 
