@@ -48,9 +48,9 @@ class Flock:
         n = len(position)
 
         dx = np.absolute(np.subtract.outer(position[:, 0], position[:, 0]))
-        # dx = np.minimum(dx, self.width-dx)
+        dx = np.minimum(dx, self.width-dx)
         dy = np.absolute(np.subtract.outer(position[:, 1], position[:, 1]))
-        # dy = np.minimum(dy, self.height-dy)
+        dy = np.minimum(dy, self.height-dy)
         distance = np.hypot(dx, dy)
 
         # Compute common distance masks
@@ -131,23 +131,31 @@ class Flock:
         position += velocity
 
         # Wraparound
-        # position += (self.width, self.height)
-        # position %= (self.width, self.height)
+        position += (self.width, self.height)
+        position %= (self.width, self.height)
 
 
-    def simulate(self, num_steps, seed=None, filename=None):
+    def simulate(self, num_steps, indices=None, seed=None, filename=None):
         if seed is not None:
             np.random.seed(seed)
-        if filename is not None:
-            f = open(filename, "a")
-            f.write(f"{self.num_pts}\n{self.width} {self.height}\n")
+        if indices is None:
+            indices = list(range(self.num_pts))
+        
+        positions = []#[self.position[indices].copy()]
         for _ in range(num_steps):
             self.step()
-            if filename is not None:
-                np.savetxt(f, self.position, fmt='%.8f', newline='\n')
-        if filename is not None:
-            f.close()
+            positions.append(self.position[indices].copy())
+            # if filename is not None:
+            #     pos = self.position if indices is None else self.position[indices]
+            #     np.savetxt(f, pos, fmt='%.8f', newline='\n')
+        positions = np.array(positions)
 
+        if filename is not None:
+            with open(filename, "w") as f:
+                n = len(indices)
+                f.write(f"{n}\n{self.width} {self.height}\n{1.0}\n")
+                np.savetxt(f, positions.reshape(-1, 2), fmt="%.8f", newline="\n")
+        return positions
 
 
 # -----------------------------------------------------------------------------

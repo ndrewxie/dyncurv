@@ -13,24 +13,19 @@ from viz import plot_data
 
 # Load data from the file
 def load_data(filename):
-    with open(filename, 'r') as f:
-        lines = f.readlines()
-
-    n = int(lines[0].strip())
-    snapshots = []
-    total_lines = len(lines)
-    i = 1  # Start after the first line
-
-    while i < total_lines:
-        frame = []
-        for j in range(n):
-            x, y = map(float, lines[i + j].strip().split())
-            frame.append((x, y))
-        snapshots.append(np.array(frame))
-        i += 50  # Move to the next snapshot
-
-    return snapshots
-
+    pts = []
+    with open(filename, "r") as f:
+        n = int(f.readline().strip())
+        w, h = map(int, f.readline().split())
+        f.readline()
+        cur_pts = []
+        for i, line in enumerate(f):
+            xi, yi = map(float, line.split())
+            cur_pts.append([xi, yi])
+            if i % n == n-1:
+                pts.append(cur_pts)
+                cur_pts = []
+    return np.array(pts)
 
 def animate_points(snapshots):
     fig, ax = plt.subplots()
@@ -64,32 +59,45 @@ def animate_points(snapshots):
 
 import os
 if __name__ == "__main__":
-    outfile = "test.txt"
-    if os.path.exists(outfile):
-        os.remove(outfile)
-    flock = Flock(4, 0.5, 0.2, 0.15)
-    flock.simulate(500, filename=outfile)
+    # outfile = "test.txt"
+    # if os.path.exists(outfile):
+    #     os.remove(outfile)
+    # flock = Flock(4, 0.5, 0.2, 0.15)
+    # flock.simulate(500, filename=outfile)
+    good, bad = [], []
+    g, b = 0, 0
+    bbb = 40
+    n = bbb*5
+    for i in range(n):
+        if i%bbb == 0:
+            print(i//bbb)
+        snapshots = load_data(f"./data/behavior{i//bbb}/boids{i%bbb}.txt")
+        #if i % 20 == 0: animate_points(snapshots)
+        pts = np.array(snapshots)
+        
+        constants.T_MIN = 0
+        constants.T_MAX = len(snapshots)
+        constants.DELTA = 1
+        metric = partial(BOID, width=500, height=250)
 
-    snapshots = load_data(outfile)
-    animate_points(snapshots)
-    
-    pts = np.array(snapshots)
-    constants.T_MIN = 0
-    constants.T_MAX = flock.num_pts
-    constants.DELTA = 1
-    metric = partial(BOID, width=flock.width, height=flock.height)
+        birth_mat, death_mat = analyze(pts, metric=metric, file_flag=True)
+        m = death_mat - birth_mat
+        if np.count_nonzero(m) > 0:
+            g += 1
+            print(f"\t{i%bbb} - Good")
+        # print(birth_mat)
+        # print(death_mat)
 
-    birth_mat, death_mat = analyze(pts, True)
-    m = death_mat - birth_mat
-    if np.count_nonzero(m) > 0:
-
-    # print(birth_mat)
-    # print(death_mat)
-
-    # if not args.no_plot:
-        print("Plotting")
-        # TODO Fix plot function to only plot one thing
-        plot_data(birth_mat, death_mat, birth_mat, death_mat)
-    else:
-        print("Crap")
+        # if not args.no_plot:
+            # print("Plotting")
+            # plot_data(birth_mat, death_mat, birth_mat, death_mat)
+        else:
+            b += 1
+            print(f"\t{i%bbb} - Bad")
+        
+        if (i+1)%bbb == 0:
+            good.append(g)
+            bad.append(b)
+            g, b = 0, 0
+    print(f"{good=}, {bad=}")
     

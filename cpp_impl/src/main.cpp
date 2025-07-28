@@ -30,7 +30,8 @@ int main(int argc, char* argv[]) {
         }
         double scale_delta;
         int n_pts;
-        in_file >> n_pts >> scale_delta;
+        vector<int> bounds(2, 0);
+        in_file >> n_pts >> bounds[0] >> bounds[1] >> scale_delta;
         string line;
         getline(in_file, line);
 
@@ -53,7 +54,7 @@ int main(int argc, char* argv[]) {
 
         scale_deltas.push_back(scale_delta);
         data.push_back(dyn_point_cloud);
-        supports.push_back(compute_support(dyn_point_cloud));
+        supports.push_back(compute_support(dyn_point_cloud, bounds));
     }
 
     cout << "Computing pairwise d2..." << endl;
