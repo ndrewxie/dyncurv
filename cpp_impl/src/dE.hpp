@@ -45,10 +45,10 @@ double compute_dE(Support& sup_v, Support& sup_w, double sd_v, double sd_w){
         for(int j = i; j < n; j++){
             for(int k = 0; k < m; k++){
                 if(k > 0){
-                    if(mask_v[i][j][k] && !mask_w[i][j][k]){
+                    if(mask_v[i][j][k]){
                         down_v[i][j][k] = down_v[i+1 < j ? i+1 : i][i != j ? j-1 : j][k-1] + 1;
                     }
-                    if(!mask_v[i][j][k] && mask_w[i][j][k]){
+                    if(mask_w[i][j][k]){
                         down_w[i][j][k] = down_w[i+1 < j ? i+1 : i][i != j ? j-1 : j][k-1] + 1;
                     }
                 }
@@ -62,13 +62,31 @@ double compute_dE(Support& sup_v, Support& sup_w, double sd_v, double sd_w){
         for(int j = n-1; j >= i; j--){
             for(int k = m-1; k >= 0; k--){
                 if(k < m-1){
-                    if(mask_v[i][j][k] && !mask_w[i][j][k]){
+                    if(mask_v[i][j][k]){
                         up_v[i][j][k] = up_v[i > 0 ? i-1 : 0][j < n-1 ? j+1 : j][k+1] + 1;
                     }
-                    if(!mask_v[i][j][k] && mask_w[i][j][k]){
+                    if(mask_w[i][j][k]){
                         up_w[i][j][k] = up_w[i > 0 ? i-1 : 0][j < n-1 ? j+1 : j][k+1] + 1;
                     }
                 }
+            }
+        }
+    }
+
+    vector<vector<vector<int>>> pref_v(n, vector<vector<int>>(n, vector<int>(m, 0)));
+    vector<vector<vector<int>>> pref_w(n, vector<vector<int>>(n, vector<int>(m, 0)));
+    for(int i = n-1; i >= 0; i--){
+        for(int j = i; j < n; j++){
+            for(int k = 0; k < n; k++){
+                int imax_v = i < n-1 ? pref_v[i+1][j][k] : down_v[i][j][k];
+                int jmax_v = j > 0 ? pref_v[i][j-1][k] : down_v[i][j][k];
+                int kmax_v = k > 0 ? pref_v[i][j][k-1] : down_v[i][j][k];
+                int imax_w = i < n-1 ? pref_w[i+1][j][k] : down_w[i][j][k];
+                int jmax_w = j > 0 ? pref_w[i][j-1][k] : down_w[i][j][k];
+                int kmax_w = k > 0 ? pref_w[i][j][k-1] : down_w[i][j][k];
+
+                pref_v[i][j][k] = max(imax_v, max(jmax_v, max(kmax_v, down_v[i][j][k])));
+                pref_w[i][j][k] = max(imax_w, max(jmax_w, max(kmax_w, down_w[i][j][k])));
             }
         }
     }
@@ -95,11 +113,16 @@ double compute_dE(Support& sup_v, Support& sup_w, double sd_v, double sd_w){
     for(int i = 0; i < n; i++){
         for(int j = i; j < n; j++){
             for(int k = 0; k < m; k++){
-                max_shift = max(max_shift, max(min(down_v[i][j][k], suff_v[i][k][k]), min(down_w[i][j][k], suff_v[i][j][k])));
+                if(mask_v[i][j][k] && !mask_w[i][j][k]){
+                    max_shift = max(max_shift, max(min(down_v[i][j][k], suff_v[i][k][k]), min(pref_v[i][j][k], up_v[i][j][k])));
+                }
+                if(!mask_v[i][j][k] && mask_w[i][j][k]){
+                    max_shift = max(max_shift, max(min(down_w[i][j][k], suff_w[i][k][k]), min(pref_w[i][j][k], up_w[i][j][k])));
+                }
             }
         }
     }
 
     return max_shift*sd;
-
+    
 }
