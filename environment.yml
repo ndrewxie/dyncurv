@@ -1,0 +1,6 @@
+name: dyncurv_venv
+dependencies:
+  - python=3.9
+  - numpy
+  - pandas
+  - matplotlib

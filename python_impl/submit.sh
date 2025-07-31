@@ -22,6 +22,11 @@ module load python/3.8.2
 cd dyncurv
 (cd cpp_impl && make clean && make release)
 
+module load anaconda/2020.07-gc563
+eval "$(conda shell.bash hook)"
+conda env update -f -y environment.yml
+conda activate dyncurv_venv
+
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 echo "Running $OMP_NUM_THREADS threads"
 (cd python_impl && python3 experiment.py --no-analysis --num-flocks 5 --num-samples 1500 --num-boids 50 --time-steps 750 --k 1 --scale 0.1)
