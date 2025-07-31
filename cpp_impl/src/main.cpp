@@ -131,13 +131,8 @@ int main(int argc, char* argv[]) {
         scale_deltas.push_back(scale_delta);
         data.push_back(dyn_point_cloud);
         supports.push_back(pc_supports);
+        cout << "\tSampled " << pc_supports.size() << " nonempty supports" << endl;
     }
-
-    cout << "Non-empty support sizes:" << endl;
-    for (auto& sup : supports) {
-        cout << sup.size() << "\t";
-    }
-    cout << endl;
 
     int n_files = data.size();
     
@@ -145,6 +140,7 @@ int main(int argc, char* argv[]) {
     vector<vector<double>> d2_matrix(n_files, vector<double>(n_files, 0.0));
     for (int flock_1 = 0; flock_1 < n_files; flock_1++) {
         for (int flock_2 = flock_1+1; flock_2 < n_files; flock_2++) {
+            cout << "\tComputing d2(" << flock_1 << ", " << flock_2 << ")" << endl;
             double d_hausdorff = 0.0;
             #pragma omp parallel for reduction(max:d_hausdorff)
             for (int i = 0; i < supports[flock_1].size(); i++) {
