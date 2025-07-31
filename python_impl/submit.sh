@@ -24,4 +24,4 @@ cd dyncurv
 
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 echo "Running $OMP_NUM_THREADS threads"
-(cd python_impl && python experiment.py --no-analysis --num-flocks 5 --num-samples 1500 --num-boids 50 --time-steps 750 --k 1 --scale 0.1)
+(cd python_impl && python3 experiment.py --no-analysis --num-flocks 5 --num-samples 1500 --num-boids 50 --time-steps 750 --k 1 --scale 0.1)
