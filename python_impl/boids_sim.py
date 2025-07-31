@@ -135,12 +135,12 @@ class Flock:
         # position %= (self.width, self.height)
 
 
-    def simulate(self, num_steps, seed=None, filename=None):
+    def simulate(self, num_steps, seed=None, filename=None, scale=0.01):
         if seed is not None:
             np.random.seed(seed)
         if filename is not None:
             f = open(filename, "a")
-            f.write(f"{self.num_pts}\n{self.width} {self.height}\n")
+            f.write(f"{self.num_pts}\n{self.width} {self.height}\n{scale}")
         for _ in range(num_steps):
             self.step()
             if filename is not None:
