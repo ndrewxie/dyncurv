@@ -52,15 +52,15 @@ bool filter_intervals(IntervalArr& segs, Interval range1, Interval range2) {
 }
 
 double compute_max_rad(
-    int i, int j, IntervalArr seg, Support& sup_v, Support& sup_w, int curr_high, double sd_v, double sd_w
+    int i, int j, IntervalArr seg, Support& sup_v, int curr_high, double sd_v
 ) {
     int m = sup_v.size();
     int n = sup_v[0].size();
 
-    int low = curr_high+1;
-    int high = min(min((j - i) / 2, n - j - 1), i);
+    int low = curr_high;
+    int high = min(min((j - i + 1) / 2, n - j - 1), i);
     
-    int max_rad = 0;
+    int max_rad = high+1;
     while (low <= high) {
         int mid = low + (high-low)/2;
         double midf = double(mid);
@@ -69,15 +69,15 @@ double compute_max_rad(
             sup_v[i+mid][j-mid].second + sd_v * midf
         );
         Interval mid_seg_high = make_pair(
-            sup_w[i-mid][j+mid].first - sd_w * midf, 
-            sup_w[i-mid][j+mid].second - sd_w * midf
+            sup_v[i-mid][j+mid].first - sd_v * midf, 
+            sup_v[i-mid][j+mid].second - sd_v * midf
         );
         bool is_nonempty = filter_intervals<false>(seg, mid_seg_low, mid_seg_high);
         if (is_nonempty) {
-            max_rad = mid;
             low = mid + 1;
         }
         else {
+            max_rad = mid;
             high = mid - 1;
         }
     }
@@ -100,7 +100,7 @@ double compute_left_d2(Support& sup_v, Support& sup_w, double sd_v, double sd_w)
             IntervalArr delta = subtract_ints(int_v, int_w);
             bool delta_nonempty = filter_intervals<true>(delta, full, full);
             if (!delta_nonempty) { continue; } 
-            double max_rad = compute_max_rad(i, j, delta, sup_v, sup_w, max_d2, sd_v, sd_w);
+            double max_rad = compute_max_rad(i, j, delta, sup_v, max_d2, sd_v);
             max_d2 = max(max_d2, max_rad);
         }
     }
@@ -110,7 +110,7 @@ double compute_left_d2(Support& sup_v, Support& sup_w, double sd_v, double sd_w)
 
 double compute_d2(Support& sup_v, Support& sup_w, double sd_v, double sd_w) {
     return max(
-        compute_left_d2(sup_v, sup_w, sd_v, sd_w),
+        compute_left_d2(sup_v, sup_w, sd_v, sd_v),
         compute_left_d2(sup_w, sup_v, sd_v, sd_w)
     );
 }

@@ -1,5 +1,7 @@
 *.txt
 *.mp4
 *.html
-a.out
+cpp_impl/a.out
+cpp_impl/dyncurv.exe
+cpp_impl/dyncurv
 __pycache__/
