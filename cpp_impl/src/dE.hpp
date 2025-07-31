@@ -10,15 +10,15 @@
 
 using namespace std;
 
-vector<vector<vector<bool>>> mask(Support& v, double scaleDelta){ 
+vector<vector<vector<bool>>> mask(Support& v, double scaleDelta, double maxScale){ 
     int n = v.size();
-    int m = v[0].size();
+    int m = (int) ((maxScale+1) / scaleDelta);
 
     vector<vector<vector<bool>>> a(n, vector<vector<bool>>(n, vector<bool>(m, 0)));
     for(int i = 0; i < n; i++){
-        for(int j = 0; j < n; j++){
+        for(int j = i; j < n; j++){
             for(int k = 0; k < m; k++){
-                a[i][j][k] = ( (v[i][j].first <= k * scaleDelta) && (k * scaleDelta <= v[i][j].second) );
+                a[i][j][k] = ( (v[i][j].first <= k * scaleDelta) && (k * scaleDelta <= v[i][j].second) && ( !(v[i][j].first == 0 && v[i][j].second == 0) ) );
             }
         }
     }
@@ -35,22 +35,32 @@ double compute_dE(Support& sup_v, Support& sup_w, double sd_v, double sd_w){
 
     int n = sup_v.size();
     double sd = sd_v;
-    vector<vector<vector<bool>>> mask_v = mask(sup_v, sd_v);
-    vector<vector<vector<bool>>> mask_w = mask(sup_w, sd_w);
+
+    double maxScale = 0.0;
+    for(int i = 0; i < n; i++){
+        for(int j = i; j < n; j++){
+            maxScale = max(maxScale, max(sup_v[i][j].second, sup_w[i][j].second));
+        }
+    }
+
+    vector<vector<vector<bool>>> mask_v = mask(sup_v, sd_v, maxScale);
+    vector<vector<vector<bool>>> mask_w = mask(sup_w, sd_w, maxScale);
     int m = mask_v[0][0].size();
 
     vector<vector<vector<int>>> down_v(n, vector<vector<int>>(n, vector<int>(m, 0)));
     vector<vector<vector<int>>> down_w(n, vector<vector<int>>(n, vector<int>(m, 0)));
     for(int i = n-1; i >= 0; i--){
         for(int j = i; j < n; j++){
-            for(int k = 0; k < m; k++){
-                if(k > 0){
-                    if(mask_v[i][j][k]){
-                        down_v[i][j][k] = down_v[i+1 < j ? i+1 : i][i != j ? j-1 : j][k-1] + 1;
-                    }
-                    if(mask_w[i][j][k]){
-                        down_w[i][j][k] = down_w[i+1 < j ? i+1 : i][i != j ? j-1 : j][k-1] + 1;
-                    }
+            assert(!mask_v[i][j][0]);
+            assert(!mask_w[i][j][0]);
+            assert(!mask_v[i][j][m-1]);
+            assert(!mask_w[i][j][m-1]);
+            for(int k = 1; k < m; k++){
+                if(mask_v[i][j][k]){
+                    down_v[i][j][k] = down_v[i+1 < j ? i+1 : i][i != j ? j-1 : j][k-1] + 1;
+                }
+                if(mask_w[i][j][k]){
+                    down_w[i][j][k] = down_w[i+1 < j ? i+1 : i][i != j ? j-1 : j][k-1] + 1;
                 }
             }
         }
@@ -60,14 +70,12 @@ double compute_dE(Support& sup_v, Support& sup_w, double sd_v, double sd_w){
     vector<vector<vector<int>>> up_w(n, vector<vector<int>>(n, vector<int>(m, 0)));
     for(int i = 0; i < n; i++){
         for(int j = n-1; j >= i; j--){
-            for(int k = m-1; k >= 0; k--){
-                if(k < m-1){
-                    if(mask_v[i][j][k]){
-                        up_v[i][j][k] = up_v[i > 0 ? i-1 : 0][j < n-1 ? j+1 : j][k+1] + 1;
-                    }
-                    if(mask_w[i][j][k]){
-                        up_w[i][j][k] = up_w[i > 0 ? i-1 : 0][j < n-1 ? j+1 : j][k+1] + 1;
-                    }
+            for(int k = m-2; k >= 0; k--){
+                if(mask_v[i][j][k]){
+                    up_v[i][j][k] = up_v[i > 0 ? i-1 : 0][j < n-1 ? j+1 : j][k+1] + 1;
+                }
+                if(mask_w[i][j][k]){
+                    up_w[i][j][k] = up_w[i > 0 ? i-1 : 0][j < n-1 ? j+1 : j][k+1] + 1;
                 }
             }
         }
@@ -114,10 +122,10 @@ double compute_dE(Support& sup_v, Support& sup_w, double sd_v, double sd_w){
         for(int j = i; j < n; j++){
             for(int k = 0; k < m; k++){
                 if(mask_v[i][j][k] && !mask_w[i][j][k]){
-                    max_shift = max(max_shift, max(min(down_v[i][j][k], suff_v[i][k][k]), min(pref_v[i][j][k], up_v[i][j][k])));
+                    max_shift = max(max_shift, max(min(down_v[i][j][k], suff_v[i][j][k]), min(pref_v[i][j][k], up_v[i][j][k])));
                 }
                 if(!mask_v[i][j][k] && mask_w[i][j][k]){
-                    max_shift = max(max_shift, max(min(down_w[i][j][k], suff_w[i][k][k]), min(pref_w[i][j][k], up_w[i][j][k])));
+                    max_shift = max(max_shift, max(min(down_w[i][j][k], suff_w[i][j][k]), min(pref_w[i][j][k], up_w[i][j][k])));
                 }
             }
         }
