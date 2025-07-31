@@ -21,12 +21,22 @@ double dist_euc(vector<double>& p1, vector<double>& p2) {
     return sqrt(sum);
 }
 
-void update_dist_mat(PointCloud& pc, vector<double>& dmat) {
+double dist_torus(vector<double>& p1, vector<double>& p2, vector<double>& bounds) {
+    double sum = 0.0;
+    for (int i = 0; i < min(p1.size(), p2.size()); i++) {
+        double diff = abs(p1[i] - p2[i]);
+        sum += powf(min(diff, bounds[i]-diff), 2.0);
+    }
+    return sqrt(sum);
+}
+
+void update_dist_mat(PointCloud& pc, vector<double>& dmat, vector<double>& bounds) {
     int n_pts = pc.size();
     for (int i = 0; i < n_pts; i++) {
         for (int j = 0; j < n_pts; j++) {
             int indx = i * n_pts + j;
-            dmat[indx] = min(dmat[indx], dist_euc(pc[i], pc[j]));
+            double d = bounds[0]<=0 || bounds[1]<=0 ? dist_euc(pc[i], pc[j]) : dist_torus(pc[i], pc[j], bounds);
+            dmat[indx] = min(dmat[indx], d);
         }
     }
 }
@@ -56,17 +66,33 @@ pair<double, double> compute_hn(int n_pts, vector<double>& dist_matrix) {
     return make_pair(0.0, 0.0);
 }
 
-Support compute_support(DynPointCloud& dpc) {
-    int n_time = dpc.size();
+Support init_support(int n_time) {
     Support support(n_time, vector<pair<double, double>>(n_time));
+    return support;
+}
+
+Support compute_support(DynPointCloud& dpc, vector<double>& bounds) {
+    int n_time = dpc.size();
+    Support support = init_support(n_time);
     for (int t0 = 0; t0 < n_time; t0++) {
         int n_pts = dpc[0].size();
         vector<double> distances(n_pts * n_pts, std::numeric_limits<double>::infinity());
         for (int t1 = t0; t1 < n_time; t1++) {
-            update_dist_mat(dpc[t1], distances);
+            update_dist_mat(dpc[t1], distances, bounds);
             auto h1_result = compute_hn(n_pts, distances);
             support[t0][t1] = h1_result;
         }
     }
     return support; 
+}
+
+bool is_support_empty(Support& supp) {
+    for (auto& row : supp) {
+        for (auto& col : row) {
+            if (col.first != col.second) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
