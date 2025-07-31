@@ -28,7 +28,6 @@ int main(int argc, char* argv[]) {
     vector<double> scale_deltas;
     vector<DynPointCloud> data;
     vector<vector<Support>> supports;
-    cout << "OpenMP actual thread count: " << omp_get_num_threads() << std::endl;
     for (int argv_index = 4; argv_index < argc; argv_index++) {
         ifstream in_file(argv[argv_index]);
         if (!in_file.is_open()) {
@@ -64,6 +63,8 @@ int main(int argc, char* argv[]) {
         }
         vector<Support> pc_supports;
         bool has_sampled_empty = false;
+
+        int global_count = 0;
         #pragma omp parallel
         {
             bool local_has_sampled_empty = false;
@@ -79,10 +80,12 @@ int main(int argc, char* argv[]) {
 
             #pragma omp for schedule(static)
             for (int sample_index = 0; sample_index < n_samples; sample_index++) {
-                if (local_count % 50 == 0) {
+                if (local_count == 100) {
                     #pragma omp critical
                     {
-                        cout << "\tSampling " << local_count << endl;
+                        global_count += local_count;
+                        local_count = 0;
+                        cout << "\tSampling " << global_count << " / " << n_samples << endl;
                     }
                 }
                 local_count++;
@@ -124,22 +127,36 @@ int main(int argc, char* argv[]) {
         data.push_back(dyn_point_cloud);
         supports.push_back(pc_supports);
     }
-    
-    for (auto& vel : supports) {
-        cout << vel.size() << endl;
-    }
 
-    /*
-    cout << "Computing pairwise d2..." << endl;
+    cout << "Non-empty support sizes:" << endl;
+    for (auto& sup : supports) {
+        cout << sup.size() << "\t";
+    }
+    cout << endl;
 
     int n_files = data.size();
     vector<vector<double>> d2_matrix(n_files, vector<double>(n_files, 0.0));
-    for (int i = 0; i < n_files; i++) {
-        cout << "Computing distances for " << i << endl;
-        for (int j = i+1; j < n_files; j++) {
-            double dist = compute_d2(supports[i], supports[j], scale_deltas[i], scale_deltas[j]);
-            d2_matrix[i][j] = dist;
-            d2_matrix[j][i] = dist;
+    
+    cout << "Computing pairwise d2..." << endl;
+
+    for (int flock_1 = 0; flock_1 < n_files; flock_1++) {
+        for (int flock_2 = flock_1+1; flock_2 < n_files; flock_2++) {
+            double d_hausdorff = 0.0;
+            #pragma omp parallel reduction(max:d_hausdorff)
+            for (int i = 0; i < supports[flock_1].size(); i++) {
+                double d_closest = std::numeric_limits<double>::infinity();
+                for (int j = 0; j < supports[flock_2].size(); j++) {
+                    double dist = compute_d2(
+                        supports[flock_1][i], supports[flock_2][j], 
+                        scale_deltas[flock_1], scale_deltas[flock_2]
+                    );
+                    d_closest = min(dist, d_closest);
+                }
+                d_hausdorff = max(d_hausdorff, d_closest);
+            }
+
+            d2_matrix[flock_1][flock_2] = d_hausdorff;
+            d2_matrix[flock_2][flock_1] = d_hausdorff;
         }
     }
 
@@ -150,6 +167,7 @@ int main(int argc, char* argv[]) {
         out_file << endl;
     }
 
+    /*
     cout << "Computing pairwise dE..." << endl;
 
     vector<vector<double>> dE_matrix(n_files, vector<double>(n_files, 0.0));
