@@ -1,10 +1,7 @@
 import sys
 import argparse
 import subprocess
-import matplotlib.pyplot as plt
 from os import path, remove, makedirs, scandir, sep #, listdir
-from sklearn.manifold import MDS
-from scipy.cluster.hierarchy import dendrogram, linkage
 
 from boids_sim import Flock
 
@@ -78,6 +75,10 @@ if __name__ == "__main__":
     
 
     if not args.no_analysis:
+        import matplotlib.pyplot as plt
+        from sklearn.manifold import MDS
+        from scipy.cluster.hierarchy import dendrogram, linkage
+
         COLORS = ["red", "green", "blue", "purple", "orange"][:args.num_behaviors]
 
         print("Analyzing results...")
@@ -93,8 +94,3 @@ if __name__ == "__main__":
         # fig = plt.figure(figsize=(25, 10))
         dn = dendrogram(Z)
         plt.show()
-        
-
-        
-            
-
