@@ -1,3 +1,4 @@
+import sys
 import argparse
 import subprocess
 import matplotlib.pyplot as plt
@@ -18,7 +19,7 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--no_dist_mat", help="Don't generate distance matrix with cpp implementation", action="store_true")
     parser.add_argument("-a", "--no_analysis", help="Don't analyze data from distance computations", action="store_true")
     parser.add_argument("-c", "--recompile", help="Recompile the cpp code", action="store_false")
-    parser.add_argument("-bf", "--behavior_file", type=str, default=path.join(OUTPUT_PATH, "behaviors.txt"), help="File with behaviors to test")
+    parser.add_argument("-bf", "--behavior_file", type=str, default=path.join(OUTPUT_PATH, "behaviors.dat"), help="File with behaviors to test")
     parser.add_argument("-nf", "--num_flocks", type=int, default=5, help="Number of flocks to generate per behavior")
     parser.add_argument("-ns", "--num_samples", type=int, default=500, help="Number of 2k+2 subsets to sample per flock")
     parser.add_argument("-nb", "--num_boids", type=int, default=50, help="Number of boids to simulate")
@@ -57,7 +58,7 @@ if __name__ == "__main__":
         print("Boids generated!")
     
 
-    cpp_output_file = path.join(OUTPUT_PATH, "dist_mat.txt")
+    cpp_output_file = path.join(OUTPUT_PATH, "dist_mat.dat")
     if not args.no_dist_mat:
         print("Generating distance matrix...")
 
@@ -69,8 +70,10 @@ if __name__ == "__main__":
                 for file in scandir(folder):
                     if file.is_file() and "flock" in file.name:
                         flock_paths.append(file.path)
-        
-        subprocess.run([path.join(CPP_PATH, "dyncurv.exe"), str(args.k), str(args.num_samples), cpp_output_file] + flock_paths, shell=True)
+        dyncurv_exe = "dyncurv"
+        if sys.platform.startswith('win'):
+            dyncurv_exe = "dyncurv.exe"
+        subprocess.run([path.join(CPP_PATH, dyncurv_exe), str(args.k), str(args.num_samples), cpp_output_file] + flock_paths)
         print("Distance matrix generated!")
     
 
