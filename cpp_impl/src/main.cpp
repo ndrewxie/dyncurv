@@ -141,7 +141,7 @@ int main(int argc, char* argv[]) {
     for (int flock_1 = 0; flock_1 < n_files; flock_1++) {
         for (int flock_2 = flock_1+1; flock_2 < n_files; flock_2++) {
             double d_hausdorff = 0.0;
-            #pragma omp parallel reduction(max:d_hausdorff)
+            #pragma omp parallel for reduction(max:d_hausdorff)
             for (int i = 0; i < supports[flock_1].size(); i++) {
                 double d_closest = std::numeric_limits<double>::infinity();
                 for (int j = 0; j < supports[flock_2].size(); j++) {
