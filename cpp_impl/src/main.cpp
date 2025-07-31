@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <vector>
 #include <random>
+#include <omp.h>
 
 #include "support.hpp"
 #include "d2.hpp"
@@ -27,6 +28,7 @@ int main(int argc, char* argv[]) {
     vector<double> scale_deltas;
     vector<DynPointCloud> data;
     vector<vector<Support>> supports;
+    cout << "OpenMP actual thread count: " << omp_get_num_threads() << std::endl;
     for (int argv_index = 4; argv_index < argc; argv_index++) {
         ifstream in_file(argv[argv_index]);
         if (!in_file.is_open()) {
@@ -67,7 +69,9 @@ int main(int argc, char* argv[]) {
             bool local_has_sampled_empty = false;
             vector<Support> local_pc_supports;
             vector<int> chosen_indices;
+            vector<double> scratch_distances;
             DynPointCloud subsample;
+            int local_count = 0;
 
             std::random_device rand_dev;
             std::mt19937 gen(rand_dev());
@@ -75,7 +79,13 @@ int main(int argc, char* argv[]) {
 
             #pragma omp for schedule(static)
             for (int sample_index = 0; sample_index < n_samples; sample_index++) {
-                cout << "\tSampling " << sample_index << " / " << n_samples << endl;
+                if (local_count % 50 == 0) {
+                    #pragma omp critical
+                    {
+                        cout << "\tSampling " << local_count << endl;
+                    }
+                }
+                local_count++;
                 chosen_indices.clear();
                 for (int i = 0; i < 2 * homology_dim + 2; i++) {
                     chosen_indices.push_back(dist(gen));
@@ -90,7 +100,7 @@ int main(int argc, char* argv[]) {
                     subsample.push_back(subsample_frame);
                 }
 
-                Support subsample_support = compute_support(subsample, torus_bound);
+                Support subsample_support = compute_support(subsample, torus_bound, scratch_distances);
                 bool is_empty = is_support_empty(subsample_support);
                 if (!is_empty) {
                     local_pc_supports.push_back(subsample_support);
