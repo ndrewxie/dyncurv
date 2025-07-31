@@ -65,8 +65,12 @@ int main(int argc, char* argv[]) {
         bool has_sampled_empty = false;
 
         int global_count = 0;
+        std::random_device rand_dev;
+        uint32_t global_seed = rand_dev();
         #pragma omp parallel
         {
+            int tid = omp_get_thread_num();
+
             bool local_has_sampled_empty = false;
             vector<Support> local_pc_supports;
             vector<int> chosen_indices;
@@ -74,8 +78,7 @@ int main(int argc, char* argv[]) {
             DynPointCloud subsample;
             int local_count = 0;
 
-            std::random_device rand_dev;
-            std::mt19937 gen(rand_dev());
+            std::mt19937 gen(global_seed + tid);
             std::uniform_int_distribution<> dist(0, n_pts - 1);
 
             #pragma omp for schedule(static)
@@ -85,7 +88,9 @@ int main(int argc, char* argv[]) {
                     {
                         global_count += local_count;
                         local_count = 0;
-                        cout << "\tSampling " << global_count << " / " << n_samples << endl;
+                        if (tid == 0) {
+                            cout << "\tSampling " << global_count << " / " << n_samples << endl;
+                        }
                     }
                 }
                 local_count++;
@@ -171,7 +176,7 @@ int main(int argc, char* argv[]) {
     for (int flock_1 = 0; flock_1 < n_files; flock_1++) {
         for (int flock_2 = flock_1+1; flock_2 < n_files; flock_2++) {
             double d_hausdorff = 0.0;
-            #pragma omp parallel reduction(max:d_hausdorff)
+            #pragma omp parallel for reduction(max:d_hausdorff)
             for (int i = 0; i < supports[flock_1].size(); i++) {
                 double d_closest = std::numeric_limits<double>::infinity();
                 for (int j = 0; j < supports[flock_2].size(); j++) {
