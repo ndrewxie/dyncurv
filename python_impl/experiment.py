@@ -1,0 +1,95 @@
+import argparse
+import subprocess
+import matplotlib.pyplot as plt
+from os import path, remove, makedirs, scandir, sep #, listdir
+from sklearn.manifold import MDS
+from scipy.cluster.hierarchy import dendrogram, linkage
+
+from boids_sim import Flock
+
+
+CUR_PATH = path.dirname(path.abspath(__file__))
+OUTPUT_PATH = path.join(CUR_PATH, "..", "data")
+CPP_PATH = path.join(CUR_PATH, "..", "cpp_impl")
+SCALE = 0.025
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(prog="experiment", description="Script to tie together full experiment")
+    parser.add_argument("-b", "--no_boids", help="Don't generate new boids samples", action="store_true")
+    parser.add_argument("-d", "--no_dist_mat", help="Don't generate distance matrix with cpp implementation", action="store_true")
+    parser.add_argument("-a", "--no_analysis", help="Don't analyze data from distance computations", action="store_true")
+    parser.add_argument("-c", "--recompile", help="Recompile the cpp code", action="store_false")
+    parser.add_argument("-bf", "--behavior_file", type=str, default=path.join(OUTPUT_PATH, "behaviors.txt"), help="File with behaviors to test")
+    parser.add_argument("-nf", "--num_flocks", type=int, default=5, help="Number of flocks to generate per behavior")
+    parser.add_argument("-ns", "--num_samples", type=int, default=500, help="Number of 2k+2 subsets to sample per flock")
+    parser.add_argument("-nb", "--num_boids", type=int, default=50, help="Number of boids to simulate")
+    parser.add_argument("-ts", "--time_steps", type=int, default=600, help="Number of time steps to simulate boids")
+    parser.add_argument("-k", "--k", type=int, default=1, help="k for 2k+2 to determine number of boids to sample")
+    args = parser.parse_args()
+
+    # if args.recompile:
+    #     subprocess.run("g++ -std=c++17 -Wall -g -O3 -fassociative-math".split() + [path.join(CPP_PATH, "main.cpp"), "-o", path.join(CPP_PATH, "dyncurve.exe")], shell=True)
+
+    args.num_behaviors = 4
+    if not args.no_boids:
+        print("Generating boids...")
+
+        with open(args.behavior_file, "r") as f:
+            behaviors = [list(map(float, line.split())) for line in f.readlines()]
+        args.num_behaviors = len(behaviors)
+
+        for i, parameters in enumerate(behaviors):
+            if len(parameters) == 3:
+                parameters.extend([50, 100, 150])
+            sep, ali, coh, sep_rad, ali_rad, coh_rad = parameters
+
+            folder = path.join(OUTPUT_PATH, f"behavior{i}")
+            if not path.exists(folder):
+                makedirs(folder)
+
+            for j in range(args.num_flocks):
+                flock = Flock(args.num_boids, sep, ali, coh, sep_rad, ali_rad, coh_rad)
+                full_flock_filename = path.join(folder, f"flock{j}.txt")
+                flock.simulate(args.time_steps, filename=full_flock_filename, scale=SCALE)
+
+        print("Boids generated!")
+    
+
+    cpp_output_file = path.join(OUTPUT_PATH, "dist_mat.txt")
+    if not args.no_dist_mat:
+        print("Generating distance matrix...")
+
+        if path.exists(cpp_output_file):
+            remove(cpp_output_file)
+        flock_paths = []
+        for folder in scandir(OUTPUT_PATH):
+            if folder.is_dir() and "behavior" in folder.name:
+                for file in scandir(folder):
+                    if file.is_file() and "flock" in file.name:
+                        flock_paths.append(file.path)
+        
+        subprocess.run([path.join(CPP_PATH, "dyncurv.exe"), str(args.k), str(args.num_samples), cpp_output_file] + flock_paths, shell=True)#, stdout=sys.stdout)
+        print("Distance matrix generated!")
+    
+
+    if not args.no_analysis:
+        COLORS = ["red", "green", "blue", "purple", "orange"][:args.num_behaviors]
+
+        print("Analyzing results...")
+        with open(cpp_output_file, "r") as f:
+            dist_mat = [list(map(float, line.split())) for line in f.readlines()]
+        print(len(dist_mat), len(dist_mat[0]))
+        cmds = MDS(n_components=2, dissimilarity="precomputed")
+        X_cmds = cmds.fit_transform(dist_mat)
+        plt.scatter(X_cmds[:, 0], X_cmds[:, 1], c=sum([[col]*args.num_flocks for col in COLORS], start=[]))
+        plt.show()
+
+        Z = linkage(dist_mat, 'single')
+        # fig = plt.figure(figsize=(25, 10))
+        dn = dendrogram(Z)
+        plt.show()
+        
+
+        
+            
+
