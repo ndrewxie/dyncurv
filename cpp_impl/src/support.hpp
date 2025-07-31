@@ -71,12 +71,15 @@ Support init_support(int n_time) {
     return support;
 }
 
-Support compute_support(DynPointCloud& dpc, vector<double>& bounds) {
+Support compute_support(DynPointCloud& dpc, vector<double>& bounds, vector<double>& distances) {
     int n_time = dpc.size();
+    int n_pts = dpc[0].size();
+    if (distances.size() < n_pts * n_pts) {
+        distances.resize(n_pts * n_pts, std::numeric_limits<double>::infinity());
+    }
     Support support = init_support(n_time);
     for (int t0 = 0; t0 < n_time; t0++) {
-        int n_pts = dpc[0].size();
-        vector<double> distances(n_pts * n_pts, std::numeric_limits<double>::infinity());
+        std::fill(distances.begin(), distances.end(), std::numeric_limits<double>::infinity());
         for (int t1 = t0; t1 < n_time; t1++) {
             update_dist_mat(dpc[t1], distances, bounds);
             auto h1_result = compute_hn(n_pts, distances);
