@@ -11,7 +11,6 @@ from boids_sim import Flock
 CUR_PATH = path.dirname(path.abspath(__file__))
 OUTPUT_PATH = path.join(CUR_PATH, "..", "data")
 CPP_PATH = path.join(CUR_PATH, "..", "cpp_impl")
-SCALE = 0.025
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="experiment", description="Script to tie together full experiment")
@@ -25,6 +24,7 @@ if __name__ == "__main__":
     parser.add_argument("-nb", "--num_boids", type=int, default=50, help="Number of boids to simulate")
     parser.add_argument("-ts", "--time_steps", type=int, default=600, help="Number of time steps to simulate boids")
     parser.add_argument("-k", "--k", type=int, default=1, help="k for 2k+2 to determine number of boids to sample")
+    parser.add_argument("-s", "--scale", type=float, default=0.1, help="Scale to increment delta by")
     args = parser.parse_args()
 
     # if args.recompile:
@@ -50,7 +50,9 @@ if __name__ == "__main__":
             for j in range(args.num_flocks):
                 flock = Flock(args.num_boids, sep, ali, coh, sep_rad, ali_rad, coh_rad)
                 full_flock_filename = path.join(folder, f"flock{j}.txt")
-                flock.simulate(args.time_steps, filename=full_flock_filename, scale=SCALE)
+                if path.exists(full_flock_filename):
+                    remove(full_flock_filename)
+                flock.simulate(args.time_steps, filename=full_flock_filename, scale=args.scale)
 
         print("Boids generated!")
     
@@ -68,7 +70,7 @@ if __name__ == "__main__":
                     if file.is_file() and "flock" in file.name:
                         flock_paths.append(file.path)
         
-        subprocess.run([path.join(CPP_PATH, "dyncurv.exe"), str(args.k), str(args.num_samples), cpp_output_file] + flock_paths, shell=True)#, stdout=sys.stdout)
+        subprocess.run([path.join(CPP_PATH, "dyncurv.exe"), str(args.k), str(args.num_samples), cpp_output_file] + flock_paths, shell=True)
         print("Distance matrix generated!")
     
 

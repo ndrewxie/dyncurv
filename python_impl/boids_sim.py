@@ -140,7 +140,7 @@ class Flock:
             np.random.seed(seed)
         if filename is not None:
             f = open(filename, "a")
-            f.write(f"{self.num_pts}\n{self.width} {self.height}\n{scale}")
+            f.write(f"{self.num_pts}\n{scale}\n{self.width} {self.height}\n")
         for _ in range(num_steps):
             self.step()
             if filename is not None:
