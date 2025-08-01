@@ -48,9 +48,9 @@ class Flock:
         n = len(position)
 
         dx = np.absolute(np.subtract.outer(position[:, 0], position[:, 0]))
-        # dx = np.minimum(dx, self.width-dx)
+        dx = np.minimum(dx, self.width-dx)
         dy = np.absolute(np.subtract.outer(position[:, 1], position[:, 1]))
-        # dy = np.minimum(dy, self.height-dy)
+        dy = np.minimum(dy, self.height-dy)
         distance = np.hypot(dx, dy)
 
         # Compute common distance masks
@@ -131,8 +131,8 @@ class Flock:
         position += velocity
 
         # Wraparound
-        # position += (self.width, self.height)
-        # position %= (self.width, self.height)
+        position += (self.width, self.height)
+        position %= (self.width, self.height)
 
 
     def simulate(self, num_steps, num_equilib_steps=0, seed=None, filename=None, scale=0.01):
