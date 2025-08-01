@@ -10,7 +10,7 @@
 
 using namespace std;
 
-vector<vector<vector<bool>>> mask(Support& v, double scaleDelta, double maxScale){ 
+vector<vector<vector<bool>>> mask(const Support& v, double scaleDelta, double maxScale){ 
     int n = v.size();
     int m = (int) ((maxScale+1) / scaleDelta);
 
@@ -27,7 +27,7 @@ vector<vector<vector<bool>>> mask(Support& v, double scaleDelta, double maxScale
 
 }
 
-double compute_dE(Support& sup_v, Support& sup_w, double sd_v, double sd_w){
+double compute_dE(const Support& sup_v, const Support& sup_w, double sd_v, double sd_w){
 
     assert(sup_v.size() == sup_v[0].size());
     assert(sup_v.size() == sup_w.size());

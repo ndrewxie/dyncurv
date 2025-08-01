@@ -10,25 +10,27 @@
 #include "support.hpp"
 #include "d2.hpp"
 #include "dE.hpp"
+#include "dH.hpp"
 
 using namespace std;
 
 int main(int argc, char* argv[]) {
-    if (argc < 4) {
-        cout << "Usage: " << argv[0] << " <k> <n_samples> <output_file> <in_file_1> ..." << endl;
+    if (argc < 5) {
+        cout << "Usage: " << argv[0] << " <k> <target_n_samples> <max_n_samples> <output_file> <in_file_1> ..." << endl;
         return 1;
     }
     cout << "Reading data and computing supports..." << endl;
 
     int homology_dim = atoi(argv[1]);
-    int n_samples = atoi(argv[2]);
+    int target_n_samples = atoi(argv[2]);
+    int max_n_samples = atoi(argv[3]);
 
-    ofstream out_file(argv[3]);
+    ofstream out_file(argv[4]);
 
     vector<double> scale_deltas;
     vector<DynPointCloud> data;
     vector<vector<Support>> supports;
-    for (int argv_index = 4; argv_index < argc; argv_index++) {
+    for (int argv_index = 5; argv_index < argc; argv_index++) {
         ifstream in_file(argv[argv_index]);
         if (!in_file.is_open()) {
             cout << "Error: cannot open " << argv[argv_index] << endl;
@@ -64,7 +66,7 @@ int main(int argc, char* argv[]) {
         vector<Support> pc_supports;
         bool has_sampled_empty = false;
 
-        int global_count = 0;
+        int n_samples_found = 0;
         std::random_device rand_dev;
         uint32_t global_seed = rand_dev();
         #pragma omp parallel
@@ -76,24 +78,19 @@ int main(int argc, char* argv[]) {
             vector<int> chosen_indices;
             vector<double> scratch_distances;
             DynPointCloud subsample;
-            int local_count = 0;
 
             std::mt19937 gen(global_seed + tid);
             std::uniform_int_distribution<> dist(0, n_pts - 1);
 
             #pragma omp for schedule(static)
-            for (int sample_index = 0; sample_index < n_samples; sample_index++) {
-                if (local_count == 100) {
-                    #pragma omp critical
-                    {
-                        global_count += local_count;
-                        local_count = 0;
-                        if (tid == 0) {
-                            cout << "\tSampling " << global_count << " / " << n_samples << endl;
-                        }
-                    }
-                }
-                local_count++;
+            for (int sample_index = 0; sample_index < max_n_samples; sample_index++) {
+                // Technically might alow more samples than target_n_samples
+                // but not worth the overhead of fixing
+                int current_count;
+                #pragma omp atomic read
+                current_count = n_samples_found;
+                if (current_count >= target_n_samples) { continue; }
+
                 chosen_indices.clear();
                 for (int i = 0; i < 2 * homology_dim + 2; i++) {
                     chosen_indices.push_back(dist(gen));
@@ -112,6 +109,14 @@ int main(int argc, char* argv[]) {
                 bool is_empty = is_support_empty(subsample_support);
                 if (!is_empty) {
                     local_pc_supports.push_back(subsample_support);
+                    #pragma omp atomic capture
+                    current_count = ++n_samples_found;
+                    if (current_count % 50 == 0) {
+                        #pragma omp critical
+                        {
+                            cout << "\tSampling " << current_count << " / " << target_n_samples << endl;
+                        }
+                    }
                 }
                 local_has_sampled_empty |= is_empty;
             }
@@ -137,29 +142,7 @@ int main(int argc, char* argv[]) {
     int n_files = data.size();
     
     cout << "Computing pairwise d2..." << endl;
-    vector<vector<double>> d2_matrix(n_files, vector<double>(n_files, 0.0));
-    for (int flock_1 = 0; flock_1 < n_files; flock_1++) {
-        for (int flock_2 = flock_1+1; flock_2 < n_files; flock_2++) {
-            cout << "\tComputing d2(" << flock_1 << ", " << flock_2 << ")" << endl;
-            double d_hausdorff = 0.0;
-            #pragma omp parallel for reduction(max:d_hausdorff)
-            for (int i = 0; i < supports[flock_1].size(); i++) {
-                double d_closest = std::numeric_limits<double>::infinity();
-                for (int j = 0; j < supports[flock_2].size(); j++) {
-                    double dist = compute_d2(
-                        supports[flock_1][i], supports[flock_2][j], 
-                        scale_deltas[flock_1], scale_deltas[flock_2]
-                    );
-                    d_closest = min(dist, d_closest);
-                }
-                d_hausdorff = max(d_hausdorff, d_closest);
-            }
-
-            d2_matrix[flock_1][flock_2] = d_hausdorff;
-            d2_matrix[flock_2][flock_1] = d_hausdorff;
-        }
-    }
-
+    vector<vector<double>> d2_matrix = compute_dH(supports, scale_deltas, compute_d2, "d2");
     for (const auto& row : d2_matrix) {
         for (const auto& elem : row) {
             out_file << elem << "\t";
@@ -167,35 +150,16 @@ int main(int argc, char* argv[]) {
         out_file << endl;
     }
 
-    // cout << "Computing pairwise dE..." << endl;
-    // vector<vector<double>> dE_matrix(n_files, vector<double>(n_files, 0.0));
-    // for (int flock_1 = 0; flock_1 < n_files; flock_1++) {
-    //     for (int flock_2 = flock_1+1; flock_2 < n_files; flock_2++) {
-    //         double d_hausdorff = 0.0;
-    //         #pragma omp parallel for reduction(max:d_hausdorff)
-    //         for (int i = 0; i < supports[flock_1].size(); i++) {
-    //             double d_closest = std::numeric_limits<double>::infinity();
-    //             for (int j = 0; j < supports[flock_2].size(); j++) {
-    //                 double dist = compute_dE(
-    //                     supports[flock_1][i], supports[flock_2][j], 
-    //                     scale_deltas[flock_1], scale_deltas[flock_2]
-    //                 );
-    //                 d_closest = min(dist, d_closest);
-    //             }
-    //             d_hausdorff = max(d_hausdorff, d_closest);
-    //         }
-
-    //         dE_matrix[flock_1][flock_2] = d_hausdorff;
-    //         dE_matrix[flock_2][flock_1] = d_hausdorff;
-    //     }
-    // }
-
-    // for (const auto& row : dE_matrix) {
-    //     for (const auto& elem : row) {
-    //         out_file << elem << "\t";
-    //     }
-    //     out_file << endl;
-    // }
+    /*
+    cout << "Computing pairwise dE..." << endl;
+    vector<vector<double>> dE_matrix = compute_dH(supports, scale_deltas, compute_dE, "dE");
+    for (const auto& row : dE_matrix) {
+        for (const auto& elem : row) {
+            out_file << elem << "\t";
+        }
+        out_file << endl;
+    }
+    */
 
     out_file.close();
     return 0;
