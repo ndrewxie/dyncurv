@@ -112,7 +112,6 @@ if __name__ == "__main__":
         plt.show()
 
         Z = linkage(dist_mat, 'single')
-        # fig = plt.figure(figsize=(25, 10))
         dn = dendrogram(Z, leaf_label_func = lambda i : 1+i//flocks)
-        # print(dn["leaves"])
+        
         plt.show()
