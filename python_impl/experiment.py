@@ -22,8 +22,10 @@ if __name__ == "__main__":
     parser.add_argument("-nms", "--num_max_samples", type=int, default=1500, help="Maximum number of 2k+2 subsets to sample per flock")
     parser.add_argument("-nb", "--num_boids", type=int, default=50, help="Number of boids to simulate")
     parser.add_argument("-ts", "--time_steps", type=int, default=600, help="Number of time steps to simulate boids")
+    parser.add_argument("-ets", "--equilib_time_steps", type=int, default=600, help="Number of time steps to equilibriate system")
     parser.add_argument("-k", "--k", type=int, default=1, help="k for 2k+2 to determine number of boids to sample")
     parser.add_argument("-s", "--scale", type=float, default=0.1, help="Scale to increment delta by")
+    parser.add_argument("-rs", "--rand_seed", type=int, default=1337, help="Seed for RNG")
     args = parser.parse_args()
 
     # if args.recompile:
@@ -51,7 +53,7 @@ if __name__ == "__main__":
                 full_flock_filename = path.join(folder, f"flock{j}.txt")
                 if path.exists(full_flock_filename):
                     remove(full_flock_filename)
-                flock.simulate(args.time_steps, filename=full_flock_filename, scale=args.scale)
+                flock.simulate(args.equilib_time_steps, args.time_steps, filename=full_flock_filename, scale=args.scale, seed=args.rand_seed)
 
         print("Boids generated!")
     
