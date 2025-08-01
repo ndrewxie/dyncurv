@@ -18,7 +18,8 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--recompile", help="Recompile the cpp code", action="store_false")
     parser.add_argument("-bf", "--behavior_file", type=str, default=path.join(OUTPUT_PATH, "behaviors.dat"), help="File with behaviors to test")
     parser.add_argument("-nf", "--num_flocks", type=int, default=5, help="Number of flocks to generate per behavior")
-    parser.add_argument("-ns", "--num_samples", type=int, default=500, help="Number of 2k+2 subsets to sample per flock")
+    parser.add_argument("-nts", "--num_target_samples", type=int, default=200, help="Target number of 2k+2 subsets to sample per flock")
+    parser.add_argument("-nms", "--num_max_samples", type=int, default=1500, help="Maximum number of 2k+2 subsets to sample per flock")
     parser.add_argument("-nb", "--num_boids", type=int, default=50, help="Number of boids to simulate")
     parser.add_argument("-ts", "--time_steps", type=int, default=600, help="Number of time steps to simulate boids")
     parser.add_argument("-k", "--k", type=int, default=1, help="k for 2k+2 to determine number of boids to sample")
@@ -70,7 +71,10 @@ if __name__ == "__main__":
         dyncurv_exe = "dyncurv"
         if sys.platform.startswith('win'):
             dyncurv_exe = "dyncurv.exe"
-        subprocess.run([path.join(CPP_PATH, dyncurv_exe), str(args.k), str(args.num_samples), cpp_output_file] + flock_paths)
+        subprocess.run([
+            path.join(CPP_PATH, dyncurv_exe), 
+            str(args.k), str(args.num_target_samples), str(args.num_max_samples), cpp_output_file
+        ] + flock_paths)
         print("Distance matrix generated!")
     
 
