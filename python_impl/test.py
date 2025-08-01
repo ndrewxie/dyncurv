@@ -19,7 +19,7 @@ def load_data(filename):
     n = int(lines[0].strip())
     snapshots = []
     total_lines = len(lines)
-    i = 1  # Start after the first line
+    i = 3  # Start after the first line
 
     while i < total_lines:
         frame = []
@@ -64,7 +64,7 @@ def animate_points(snapshots):
 
 import os
 if __name__ == "__main__":
-    outfile = "test.txt"
+    outfile = "./data/behavior0/flock0.txt"
     if os.path.exists(outfile):
         os.remove(outfile)
     flock = Flock(4, 0.5, 0.2, 0.15)
@@ -73,23 +73,23 @@ if __name__ == "__main__":
     snapshots = load_data(outfile)
     animate_points(snapshots)
     
-    pts = np.array(snapshots)
-    constants.T_MIN = 0
-    constants.T_MAX = flock.num_pts
-    constants.DELTA = 1
-    metric = partial(BOID, width=flock.width, height=flock.height)
+    # pts = np.array(snapshots)
+    # constants.T_MIN = 0
+    # constants.T_MAX = flock.num_pts
+    # constants.DELTA = 1
+    # metric = partial(BOID, width=flock.width, height=flock.height)
 
-    birth_mat, death_mat = analyze(pts, True)
-    m = death_mat - birth_mat
-    if np.count_nonzero(m) > 0:
+    # birth_mat, death_mat = analyze(pts, True)
+    # m = death_mat - birth_mat
+    # if np.count_nonzero(m) > 0:
 
-    # print(birth_mat)
-    # print(death_mat)
+    # # print(birth_mat)
+    # # print(death_mat)
 
-    # if not args.no_plot:
-        print("Plotting")
-        # TODO Fix plot function to only plot one thing
-        plot_data(birth_mat, death_mat, birth_mat, death_mat)
-    else:
-        print("Crap")
+    # # if not args.no_plot:
+    #     print("Plotting")
+    #     # TODO Fix plot function to only plot one thing
+    #     plot_data(birth_mat, death_mat, birth_mat, death_mat)
+    # else:
+    #     print("Crap")
     

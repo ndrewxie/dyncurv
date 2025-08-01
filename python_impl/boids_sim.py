@@ -135,7 +135,7 @@ class Flock:
         # position %= (self.width, self.height)
 
 
-    def simulate(self, num_equilib_steps, num_steps, seed=None, filename=None, scale=0.01):
+    def simulate(self, num_steps, num_equilib_steps=0, seed=None, filename=None, scale=0.01):
         if seed is not None:
             np.random.seed(seed)
         if filename is not None:
