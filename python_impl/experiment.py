@@ -50,10 +50,16 @@ if __name__ == "__main__":
 
             for j in range(args.num_flocks):
                 flock = Flock(args.num_boids, sep, ali, coh, sep_rad, ali_rad, coh_rad)
+
                 full_flock_filename = path.join(folder, f"flock{j}.txt")
                 if path.exists(full_flock_filename):
                     remove(full_flock_filename)
-                flock.simulate(args.equilib_time_steps, args.time_steps, filename=full_flock_filename, scale=args.scale, seed=args.rand_seed)
+
+                flock.simulate(args.time_steps,
+                               num_equilib_steps=args.equilib_time_steps,
+                               filename=full_flock_filename,
+                               scale=args.scale,
+                               seed=args.rand_seed)
 
         print("Boids generated!")
     
@@ -64,19 +70,23 @@ if __name__ == "__main__":
 
         if path.exists(cpp_output_file):
             remove(cpp_output_file)
+
         flock_paths = []
         for folder in scandir(OUTPUT_PATH):
             if folder.is_dir() and "behavior" in folder.name:
                 for file in scandir(folder):
                     if file.is_file() and "flock" in file.name:
                         flock_paths.append(file.path)
+
         dyncurv_exe = "dyncurv"
         if sys.platform.startswith('win'):
             dyncurv_exe = "dyncurv.exe"
+
         subprocess.run([
             path.join(CPP_PATH, dyncurv_exe), 
             str(args.k), str(args.num_target_samples), str(args.num_max_samples), cpp_output_file
         ] + flock_paths)
+        
         print("Distance matrix generated!")
     
 
@@ -85,18 +95,24 @@ if __name__ == "__main__":
         from sklearn.manifold import MDS
         from scipy.cluster.hierarchy import dendrogram, linkage
 
-        COLORS = ["red", "green", "blue", "purple", "orange"][:args.num_behaviors]
+        behaviors = args.num_behaviors
+        COLORS = ["red", "green", "blue", "purple", "orange"][:behaviors]
 
         print("Analyzing results...")
         with open(cpp_output_file, "r") as f:
             dist_mat = [list(map(float, line.split())) for line in f.readlines()]
-        print(len(dist_mat), len(dist_mat[0]))
-        cmds = MDS(n_components=2, dissimilarity="precomputed")
+        flocks = len(dist_mat) // behaviors
+
+        cmds = MDS(n_components=2, dissimilarity="precomputed") # Change n_components=3 for 2d
         X_cmds = cmds.fit_transform(dist_mat)
-        plt.scatter(X_cmds[:, 0], X_cmds[:, 1], c=sum([[col]*args.num_flocks for col in COLORS], start=[]))
+        # fig = plt.figure()
+        # ax = fig.add_subplot(projection="3d")
+        # ax.scatter(X_cmds[:, 0], X_cmds[:, 1], X_cmds[:, 2], c=sum([[col]*flocks for col in COLORS], start=[]))
+        plt.scatter(X_cmds[:, 0], X_cmds[:, 1], c=sum([[col]*flocks for col in COLORS], start=[]))
         plt.show()
 
         Z = linkage(dist_mat, 'single')
         # fig = plt.figure(figsize=(25, 10))
-        dn = dendrogram(Z)
+        dn = dendrogram(Z, leaf_label_func = lambda i : 1+i//flocks)
+        # print(dn["leaves"])
         plt.show()
