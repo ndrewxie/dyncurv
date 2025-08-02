@@ -81,7 +81,7 @@ if __name__ == "__main__":
         dyncurv_exe = "dyncurv"
         if sys.platform.startswith('win'):
             dyncurv_exe = "dyncurv.exe"
-
+        
         subprocess.run([
             path.join(CPP_PATH, dyncurv_exe), 
             str(args.k), str(args.num_target_samples), str(args.num_max_samples), cpp_output_file
