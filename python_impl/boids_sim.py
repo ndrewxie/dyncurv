@@ -25,10 +25,11 @@ class Flock:
         angle = np.random.uniform(0, 2*np.pi, count)
         self.velocity[:, 0] = np.cos(angle)
         self.velocity[:, 1] = np.sin(angle)
-        angle = np.random.uniform(0, 2*np.pi, count)
-        radius = min(width, height)/2*np.random.uniform(0, 1, count)
-        self.position[:, 0] = width/2 + np.cos(angle)*radius
-        self.position[:, 1] = height/2 + np.sin(angle)*radius
+        self.position = np.random.uniform([0, 0], [self.width, self.height], (count, 2))
+        # angle = np.random.uniform(0, 2*np.pi, count)
+        # radius = min(width, height)/2*np.random.uniform(0, 1, count)
+        # self.position[:, 0] = width/2 + np.cos(angle)*radius
+        # self.position[:, 1] = height/2 + np.sin(angle)*radius
 
         self.sep = sep
         self.ali = ali
