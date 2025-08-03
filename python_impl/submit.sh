@@ -28,4 +28,4 @@ conda activate dyncurv_venv
 
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 echo "Running $OMP_NUM_THREADS threads"
-(cd python_impl && python3 experiment.py --no_analysis --time_steps 600 --k 1 --scale 0.1)
+(cd python_impl && python3 experiment.py --no_analysis)

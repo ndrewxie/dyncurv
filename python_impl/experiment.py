@@ -24,7 +24,7 @@ if __name__ == "__main__":
     parser.add_argument("-ts", "--time_steps", type=int, default=600, help="Number of time steps to simulate boids")
     parser.add_argument("-ets", "--equilib_time_steps", type=int, default=600, help="Number of time steps to equilibriate system")
     parser.add_argument("-k", "--k", type=int, default=1, help="k for 2k+2 to determine number of boids to sample")
-    parser.add_argument("-s", "--scale", type=float, default=0.1, help="Scale to increment delta by")
+    parser.add_argument("-s", "--scale", type=float, default=1.0, help="Scale to increment delta by")
     parser.add_argument("-rs", "--rand_seed", type=int, default=1337, help="Seed for RNG")
     args = parser.parse_args()
 
