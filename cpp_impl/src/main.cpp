@@ -66,7 +66,6 @@ int main(int argc, char* argv[]) {
         vector<Support> pc_supports;
         bool has_sampled_empty = false;
 
-        int n_samples_found = 0;
         std::random_device rand_dev;
         uint32_t global_seed = rand_dev();
         #pragma omp parallel
@@ -84,13 +83,6 @@ int main(int argc, char* argv[]) {
 
             #pragma omp for schedule(static)
             for (int sample_index = 0; sample_index < max_n_samples; sample_index++) {
-                // Technically might alow more samples than target_n_samples
-                // but not worth the overhead of fixing
-                int current_count;
-                #pragma omp atomic read
-                current_count = n_samples_found;
-                if (current_count >= target_n_samples) { continue; }
-
                 chosen_indices.clear();
                 for (int i = 0; i < 2 * homology_dim + 2; i++) {
                     chosen_indices.push_back(dist(gen));
@@ -109,14 +101,6 @@ int main(int argc, char* argv[]) {
                 bool is_empty = is_support_empty(subsample_support);
                 if (!is_empty) {
                     local_pc_supports.push_back(subsample_support);
-                    #pragma omp atomic capture
-                    current_count = ++n_samples_found;
-                    if (current_count % 50 == 0) {
-                        #pragma omp critical
-                        {
-                            cout << "\tSampling " << current_count << " / " << target_n_samples << endl;
-                        }
-                    }
                 }
                 local_has_sampled_empty |= is_empty;
             }
@@ -133,10 +117,50 @@ int main(int argc, char* argv[]) {
         if (has_sampled_empty) {
             pc_supports.push_back(init_support(dyn_point_cloud.size()));
         }
+
+        int n = min((size_t)target_n_samples, pc_supports.size() / 2);
+        cout << "\tTesting " << pc_supports.size() << " test supports" << endl;
+        cout << "\tN = " << n << endl;
+        double approx_error_naive = 0.0;
+        #pragma omp parallel for reduction(max:approx_error_naive)
+        for (int j = n; j < pc_supports.size(); j++) {
+            double min_dist = std::numeric_limits<double>::infinity();
+            for (int k = 0; k < n; k++) {
+                min_dist = min(min_dist, compute_d2(pc_supports[k], pc_supports[j], scale_delta, scale_delta));
+            }
+            approx_error_naive = max(approx_error_naive, min_dist);
+        }
+        cout << "\tNaive Approx error: " << approx_error_naive << endl;
+        
+        vector<Support> k_center_supports;
+        vector<double> k_center_dists(pc_supports.size(), std::numeric_limits<double>::infinity());
+        vector<bool> pc_supports_flag(pc_supports.size(), false);
+        for (int i = 0; i < min(pc_supports.size(), (size_t)target_n_samples); i++) {
+            int max_index = max_element(k_center_dists.begin(), k_center_dists.end()) - k_center_dists.begin();
+            Support max_supp = pc_supports[max_index];
+            k_center_supports.push_back(max_supp);
+            pc_supports_flag[max_index] = true;
+            #pragma omp parallel for schedule(static)
+            for (int j = 0; j < k_center_dists.size(); j++) {
+                k_center_dists[j] = min(k_center_dists[j], compute_d2(max_supp, pc_supports[j], scale_delta, scale_delta));
+            }
+        }
+        double approx_error = 0.0;
+        #pragma omp parallel for reduction(max:approx_error)
+        for (int j = 0; j < pc_supports.size(); j++) {
+            if (pc_supports_flag[j]) { continue; }
+            double min_dist = std::numeric_limits<double>::infinity();
+            for (int k = 0; k < k_center_supports.size(); k++) {
+                min_dist = min(min_dist, compute_d2(pc_supports[j], k_center_supports[k], scale_delta, scale_delta));
+            }
+            approx_error = max(approx_error, min_dist);
+        }
+        cout << "\tApprox error: " << approx_error << endl;
+
         scale_deltas.push_back(scale_delta);
         data.push_back(dyn_point_cloud);
-        supports.push_back(pc_supports);
-        cout << "\tSampled " << pc_supports.size() << " nonempty supports" << endl;
+        supports.push_back(k_center_supports);
+        cout << "\tSampled " << k_center_supports.size() << " nonempty supports" << endl;
     }
 
     int n_files = data.size();
@@ -151,16 +175,17 @@ int main(int argc, char* argv[]) {
     }
 
     /*
-    cout << "Computing pairwise dE..." << endl;
-    vector<vector<double>> dE_matrix = compute_dH(supports, scale_deltas, compute_dE, "dE");
-    for (const auto& row : dE_matrix) {
-        for (const auto& elem : row) {
-            out_file << elem << "\t";
-        }
-        out_file << endl;
-    }
-    */
+ *     cout << "Computing pairwise dE..." << endl;
+ *         vector<vector<double>> dE_matrix = compute_dH(supports, scale_deltas, compute_dE, "dE");
+ *             for (const auto& row : dE_matrix) {
+ *                     for (const auto& elem : row) {
+ *                                 out_file << elem << "\t";
+ *                                         }
+ *                                                 out_file << endl;
+ *                                                     }
+ *                                                         */
 
     out_file.close();
     return 0;
 }
+
