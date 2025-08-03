@@ -32,12 +32,11 @@ if __name__ == "__main__":
     #     subprocess.run("g++ -std=c++17 -Wall -g -O3 -fassociative-math".split() + [path.join(CPP_PATH, "main.cpp"), "-o", path.join(CPP_PATH, "dyncurve.exe")], shell=True)
 
     args.num_behaviors = 4
+    with open(args.behavior_file, "r") as f:
+        behaviors = [list(map(float, line.split())) for line in f.readlines()]
+    args.num_behaviors = len(behaviors)
     if not args.no_boids:
         print("Generating boids...")
-
-        with open(args.behavior_file, "r") as f:
-            behaviors = [list(map(float, line.split())) for line in f.readlines()]
-        args.num_behaviors = len(behaviors)
 
         for i, parameters in enumerate(behaviors):
             if len(parameters) == 3:
@@ -96,7 +95,7 @@ if __name__ == "__main__":
         from scipy.cluster.hierarchy import dendrogram, linkage
 
         behaviors = args.num_behaviors
-        COLORS = ["red", "green", "blue", "purple", "orange"][:behaviors]
+        COLORS = ["red", "green", "blue", "purple", "orange", "black"][:behaviors]
 
         print("Analyzing results...")
         with open(cpp_output_file, "r") as f:
