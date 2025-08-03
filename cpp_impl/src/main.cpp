@@ -63,8 +63,7 @@ int main(int argc, char* argv[]) {
 
             dyn_point_cloud.back().push_back(p);
         }
-        vector<Support> pc_supports;
-        bool has_sampled_empty = false;
+        vector<Support> pc_supports = { init_support(dyn_point_cloud.size()) };
 
         std::random_device rand_dev;
         uint32_t global_seed = rand_dev();
@@ -72,7 +71,6 @@ int main(int argc, char* argv[]) {
         {
             int tid = omp_get_thread_num();
 
-            bool local_has_sampled_empty = false;
             vector<Support> local_pc_supports;
             vector<int> chosen_indices;
             vector<double> scratch_distances;
@@ -102,7 +100,6 @@ int main(int argc, char* argv[]) {
                 if (!is_empty) {
                     local_pc_supports.push_back(subsample_support);
                 }
-                local_has_sampled_empty |= is_empty;
             }
             #pragma omp critical
             {
@@ -111,56 +108,26 @@ int main(int argc, char* argv[]) {
                     local_pc_supports.begin(),
                     local_pc_supports.end()
                 );
-                has_sampled_empty |= local_has_sampled_empty;
             }
-        }
-        if (has_sampled_empty) {
-            pc_supports.push_back(init_support(dyn_point_cloud.size()));
         }
 
-        int n = min((size_t)target_n_samples, pc_supports.size() / 2);
-        cout << "\tTesting " << pc_supports.size() << " test supports" << endl;
-        cout << "\tN = " << n << endl;
-        double approx_error_naive = 0.0;
-        #pragma omp parallel for reduction(max:approx_error_naive)
-        for (int j = n; j < pc_supports.size(); j++) {
-            double min_dist = std::numeric_limits<double>::infinity();
-            for (int k = 0; k < n; k++) {
-                min_dist = min(min_dist, compute_d2(pc_supports[k], pc_supports[j], scale_delta, scale_delta));
-            }
-            approx_error_naive = max(approx_error_naive, min_dist);
-        }
-        cout << "\tNaive Approx error: " << approx_error_naive << endl;
-        
         vector<Support> k_center_supports;
         vector<double> k_center_dists(pc_supports.size(), std::numeric_limits<double>::infinity());
-        vector<bool> pc_supports_flag(pc_supports.size(), false);
         for (int i = 0; i < min(pc_supports.size(), (size_t)target_n_samples); i++) {
             int max_index = max_element(k_center_dists.begin(), k_center_dists.end()) - k_center_dists.begin();
             Support max_supp = pc_supports[max_index];
             k_center_supports.push_back(max_supp);
-            pc_supports_flag[max_index] = true;
             #pragma omp parallel for schedule(static)
             for (int j = 0; j < k_center_dists.size(); j++) {
                 k_center_dists[j] = min(k_center_dists[j], compute_d2(max_supp, pc_supports[j], scale_delta, scale_delta));
             }
         }
-        double approx_error = 0.0;
-        #pragma omp parallel for reduction(max:approx_error)
-        for (int j = 0; j < pc_supports.size(); j++) {
-            if (pc_supports_flag[j]) { continue; }
-            double min_dist = std::numeric_limits<double>::infinity();
-            for (int k = 0; k < k_center_supports.size(); k++) {
-                min_dist = min(min_dist, compute_d2(pc_supports[j], k_center_supports[k], scale_delta, scale_delta));
-            }
-            approx_error = max(approx_error, min_dist);
-        }
-        cout << "\tApprox error: " << approx_error << endl;
+        double k_center_approx_error = *std::max_element(k_center_dists.begin(), k_center_dists.end());
 
         scale_deltas.push_back(scale_delta);
         data.push_back(dyn_point_cloud);
         supports.push_back(k_center_supports);
-        cout << "\tSampled " << k_center_supports.size() << " nonempty supports" << endl;
+        cout << "\tSampled " << k_center_supports.size() << " supports with approximation error " << k_center_approx_error << endl;
     }
 
     int n_files = data.size();
