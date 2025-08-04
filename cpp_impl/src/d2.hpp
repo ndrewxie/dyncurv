@@ -88,21 +88,17 @@ double compute_left_d2(const Support& sup_v, const Support& sup_w, double sd_v, 
 
     Interval full = make_pair(-numeric_limits<double>::infinity(), numeric_limits<double>::infinity());
 
-    int n = sup_v.n_diagonals();
     double max_d2 = 0.0;
-    for (int d = 0; d < n; d++) {
-        for (int k = 0; k < sup_v.diagonal_size(d); k++) {
-            auto cartesian = sup_v.to_cartesian(d, k);
-            int i = cartesian.first;
-            int j = cartesian.second;
-            Interval int_v = make_pair(sup_v.at(i, j).first, sup_v.at(i, j).second);
-            Interval int_w = make_pair(sup_w.at(i, j).first, sup_w.at(i, j).second);
-            IntervalArr delta = subtract_ints(int_v, int_w);
-            bool delta_nonempty = filter_intervals<true>(delta, full, full);
-            if (!delta_nonempty) { continue; } 
-            double max_rad = compute_max_rad(i, j, delta, sup_v, max_d2, sd_v);
-            max_d2 = max(max_d2, max_rad);
-        }
+    for (auto& indices : sup_v.indices) {
+        int i = indices.first;
+        int j = indices.second;
+        Interval int_v = make_pair(sup_v.at(i, j).first, sup_v.at(i, j).second);
+        Interval int_w = make_pair(sup_w.at(i, j).first, sup_w.at(i, j).second);
+        IntervalArr delta = subtract_ints(int_v, int_w);
+        bool delta_nonempty = filter_intervals<true>(delta, full, full);
+        if (!delta_nonempty) { continue; } 
+        double max_rad = compute_max_rad(i, j, delta, sup_v, max_d2, sd_v);
+        max_d2 = max(max_d2, max_rad);
     }
     return max_d2 * sd_v;
 }

@@ -4,10 +4,10 @@ CXXDEBUGFLAGS = -O0 -fsanitize=address -fsanitize=undefined
 CXXRELEASEFLAGS = -O3 -fassociative-math
 
 dyncurv: src/*
-	$(CXX) $(CXXFLAGS) $(CXXDEBUGFLAGS) src/main.cpp
+	$(CXX) $(CXXFLAGS) $(CXXDEBUGFLAGS) src/main.cpp src/support.cpp -o dyncurv
 
 release: src/*
-	$(CXX) $(CXXFLAGS) $(CXXRELEASEFLAGS) src/main.cpp -o dyncurv
+	$(CXX) $(CXXFLAGS) $(CXXRELEASEFLAGS) src/main.cpp src/support.cpp -o dyncurv
 
 clean:
 	rm -f dyncurv

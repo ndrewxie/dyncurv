@@ -64,7 +64,7 @@ int main(int argc, char* argv[]) {
 
             dyn_point_cloud.back().push_back(p);
         }
-        vector<Support> pc_supports = { init_support(dyn_point_cloud.size()) };
+        vector<Support> pc_supports = { Support(dyn_point_cloud.size()) };
 
         std::random_device rand_dev;
         uint32_t global_seed = rand_dev();
@@ -96,9 +96,8 @@ int main(int argc, char* argv[]) {
                     subsample.push_back(subsample_frame);
                 }
 
-                Support subsample_support = compute_support(subsample, torus_bound, scratch_distances);
-                bool is_empty = is_support_empty(subsample_support);
-                if (!is_empty) {
+                Support subsample_support = Support(subsample, torus_bound, scratch_distances);
+                if (subsample_support.indices.size() > 0) {
                     local_pc_supports.push_back(subsample_support);
                 }
             }
