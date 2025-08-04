@@ -151,13 +151,6 @@ class Flock:
         if filename is not None:
             f.close()
 
-        if filename is not None:
-            with open(filename, "w") as f:
-                n = len(indices)
-                f.write(f"{n}\n{self.width} {self.height}\n{1.0}\n")
-                np.savetxt(f, positions.reshape(-1, 2), fmt="%.8f", newline="\n")
-        return positions
-
 
 # -----------------------------------------------------------------------------
 if __name__ == '__main__':
