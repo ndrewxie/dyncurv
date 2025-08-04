@@ -105,7 +105,7 @@ if __name__ == "__main__":
         behaviors = args.num_behaviors
         flocks = len(dist_mat) // behaviors
         colors = sum([[col]*flocks for col in COLORS[:behaviors]], start=[])
-        print(len(dist_mat), len(colors))
+        
         cmds = MDS(n_components=2, dissimilarity="precomputed") # Change n_components=3 for 2d
         X_cmds = cmds.fit_transform(dist_mat)
         # fig = plt.figure()
