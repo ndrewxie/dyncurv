@@ -54,8 +54,7 @@ bool filter_intervals(IntervalArr& segs, Interval range1, Interval range2) {
 double compute_max_rad(
     int i, int j, IntervalArr seg, const Support& sup_v, int curr_high, double sd_v
 ) {
-    int m = sup_v.size();
-    int n = sup_v[0].size();
+    int n = sup_v.size();
 
     int low = curr_high;
     int high = min(min((j - i + 1) / 2, n - j - 1), i);
@@ -65,12 +64,12 @@ double compute_max_rad(
         int mid = low + (high-low)/2;
         double midf = double(mid);
         Interval mid_seg_low = make_pair(
-            sup_v[i+mid][j-mid].first + sd_v * midf, 
-            sup_v[i+mid][j-mid].second + sd_v * midf
+            sup_v.at(i+mid, j-mid).first + sd_v * midf, 
+            sup_v.at(i+mid, j-mid).second + sd_v * midf
         );
         Interval mid_seg_high = make_pair(
-            sup_v[i-mid][j+mid].first - sd_v * midf, 
-            sup_v[i-mid][j+mid].second - sd_v * midf
+            sup_v.at(i-mid, j+mid).first - sd_v * midf, 
+            sup_v.at(i-mid, j+mid).second - sd_v * midf
         );
         bool is_nonempty = filter_intervals<false>(seg, mid_seg_low, mid_seg_high);
         if (is_nonempty) {
@@ -86,17 +85,18 @@ double compute_max_rad(
 
 double compute_left_d2(const Support& sup_v, const Support& sup_w, double sd_v, double sd_w) {
     assert(sup_v.size() == sup_w.size());
-    assert(sup_v[0].size() == sup_w[0].size());
 
     Interval full = make_pair(-numeric_limits<double>::infinity(), numeric_limits<double>::infinity());
 
-    int m = sup_v.size();
-    int n = sup_v[0].size();
+    int n = sup_v.n_diagonals();
     double max_d2 = 0.0;
-    for (int i = 0; i < m; i++) {
-        for (int j = i; j < n; j++) {
-            Interval int_v = make_pair(sup_v[i][j].first, sup_v[i][j].second);
-            Interval int_w = make_pair(sup_w[i][j].first, sup_w[i][j].second);
+    for (int d = 0; d < n; d++) {
+        for (int k = 0; k < sup_v.diagonal_size(d); k++) {
+            auto cartesian = sup_v.to_cartesian(d, k);
+            int i = cartesian.first;
+            int j = cartesian.second;
+            Interval int_v = make_pair(sup_v.at(i, j).first, sup_v.at(i, j).second);
+            Interval int_w = make_pair(sup_w.at(i, j).first, sup_w.at(i, j).second);
             IntervalArr delta = subtract_ints(int_v, int_w);
             bool delta_nonempty = filter_intervals<true>(delta, full, full);
             if (!delta_nonempty) { continue; } 
@@ -104,7 +104,6 @@ double compute_left_d2(const Support& sup_v, const Support& sup_w, double sd_v, 
             max_d2 = max(max_d2, max_rad);
         }
     }
-
     return max_d2 * sd_v;
 }
 

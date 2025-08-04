@@ -11,6 +11,7 @@
 #include "d2.hpp"
 #include "dE.hpp"
 #include "dH.hpp"
+#include "diag_arr.hpp"
 
 using namespace std;
 

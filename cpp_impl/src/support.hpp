@@ -5,13 +5,15 @@
 #include <cmath>
 #include <limits>
 
+#include "diag_arr.hpp"
+
 using namespace std;
 
 typedef vector<double> Point;
 typedef vector<Point> PointCloud;
 typedef vector<PointCloud> DynPointCloud;
 
-typedef vector<vector<pair<double, double>>> Support;
+typedef DiagonalMatrix<pair<double, double>> Support;
 
 double dist_euc(vector<double>& p1, vector<double>& p2) {
     double sum = 0.0;
@@ -67,7 +69,7 @@ pair<double, double> compute_hn(int n_pts, vector<double>& dist_matrix) {
 }
 
 Support init_support(int n_time) {
-    Support support(n_time, vector<pair<double, double>>(n_time));
+    Support support(n_time, make_pair(0.0, 0.0));
     return support;
 }
 
@@ -83,16 +85,18 @@ Support compute_support(DynPointCloud& dpc, vector<double>& bounds, vector<doubl
         for (int t1 = t0; t1 < n_time; t1++) {
             update_dist_mat(dpc[t1], distances, bounds);
             auto h1_result = compute_hn(n_pts, distances);
-            support[t0][t1] = h1_result;
+            support.at(t0, t1) = h1_result;
         }
     }
     return support; 
 }
 
 bool is_support_empty(Support& supp) {
-    for (auto& row : supp) {
-        for (auto& col : row) {
-            if (col.first != col.second) {
+    int n = supp.size();
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            auto elem = supp.at(i, j);
+            if (elem.first != elem.second) {
                 return false;
             }
         }

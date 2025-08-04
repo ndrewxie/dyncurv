@@ -18,7 +18,7 @@ vector<vector<vector<bool>>> mask(const Support& v, double scaleDelta, double ma
     for(int i = 0; i < n; i++){
         for(int j = i; j < n; j++){
             for(int k = 0; k < m; k++){
-                a[i][j][k] = ( (v[i][j].first <= k * scaleDelta) && (k * scaleDelta <= v[i][j].second) && ( !(v[i][j].first == 0 && v[i][j].second == 0) ) );
+                a[i][j][k] = ( (v.at(i, j).first <= k * scaleDelta) && (k * scaleDelta <= v.at(i, j).second) && ( !(v.at(i, j).first == 0 && v.at(i, j).second == 0) ) );
             }
         }
     }
@@ -28,8 +28,6 @@ vector<vector<vector<bool>>> mask(const Support& v, double scaleDelta, double ma
 }
 
 double compute_dE(const Support& sup_v, const Support& sup_w, double sd_v, double sd_w){
-
-    assert(sup_v.size() == sup_v[0].size());
     assert(sup_v.size() == sup_w.size());
     assert(sd_v == sd_w);
 
@@ -39,7 +37,7 @@ double compute_dE(const Support& sup_v, const Support& sup_w, double sd_v, doubl
     double maxScale = 0.0;
     for(int i = 0; i < n; i++){
         for(int j = i; j < n; j++){
-            maxScale = max(maxScale, max(sup_v[i][j].second, sup_w[i][j].second));
+            maxScale = max(maxScale, max(sup_v.at(i, j).second, sup_w.at(i, j).second));
         }
     }
 
