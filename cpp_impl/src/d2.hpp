@@ -55,22 +55,28 @@ double compute_max_rad(
     int i, int j, IntervalArr seg, const Support& sup_v, int curr_high, double sd_v
 ) {
     int n = sup_v.size();
+    int shift_limit_out = min(i, n - j - 1);
+    int shift_limit_in = (j - i + 1) / 2;
 
     int low = curr_high;
-    int high = min(min((j - i + 1) / 2, n - j - 1), i);
+    int high = shift_limit_out;
     
     int max_rad = high+1;
     while (low <= high) {
         int mid = low + (high-low)/2;
         double midf = double(mid);
+        
+        int shift_in = min(shift_limit_in, mid);
+        int shift_out = mid;
         Interval mid_seg_low = make_pair(
-            sup_v.at(i+mid, j-mid).first + sd_v * midf, 
-            sup_v.at(i+mid, j-mid).second + sd_v * midf
+            sup_v.at(i+shift_in, j-shift_in).first + sd_v * midf, 
+            sup_v.at(i+shift_in, j-shift_in).second + sd_v * midf
         );
         Interval mid_seg_high = make_pair(
-            sup_v.at(i-mid, j+mid).first - sd_v * midf, 
-            sup_v.at(i-mid, j+mid).second - sd_v * midf
+            sup_v.at(i-shift_out, j+shift_out).first - sd_v * midf, 
+            sup_v.at(i-shift_out, j+shift_out).second - sd_v * midf
         );
+
         bool is_nonempty = filter_intervals<false>(seg, mid_seg_low, mid_seg_high);
         if (is_nonempty) {
             low = mid + 1;

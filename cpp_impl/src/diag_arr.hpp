@@ -1,63 +1,69 @@
 #pragma once
 
 #include <vector>
-#include <cassert>
+#include <utility>
+#include <algorithm>
 
 using namespace std;
 
 template <typename T>
 class DiagonalMatrix {
 public:
-    DiagonalMatrix(int size, T init_val) : n(size) {
-        if (n == 0) return;
-        
-        int num_diagonals = 2 * n - 1;
-        diagonals.resize(num_diagonals);
-        
-        for (int d = 0; d < num_diagonals; d++) {
-            int len = (d < n) ? (d + 1) : (2 * n - 1 - d);
-            diagonals[d] = vector<T>(len, init_val);
+    DiagonalMatrix(int input_n, T init_val) : n(input_n) {
+        if (n <= 0) {
+            n = 0;
+            return;
         }
-    }
 
-    T& at(int i, int j) {
-        return const_cast<T&>(static_cast<const DiagonalMatrix&>(*this).at(i, j));
-    }
-    
-    const T& at(int i, int j) const {
-        assert(i < n && j < n);
-        
-        int diagonal_index = i + j;
-        int inner_index = (diagonal_index < n) ? i : (n - 1 - j); // Hopefully this will be branchless?
-        
-        return diagonals[diagonal_index][inner_index];
-    }
+        num_diagonals = 2 * n - 1;
+        start_i.resize(num_diagonals);
+        diag_lengths.resize(num_diagonals);
+        offsets.resize(num_diagonals + 1);
 
-    int size() const {
-        return n;
-    }
-
-    int n_diagonals() const {
-        return diagonals.size();
-    }
-
-    int diagonal_size(int d) const {
-        return diagonals[d].size();
-    }
-    
-    pair<int, int> to_cartesian(int d, int k) const {
-        int len = (d < n) ? (d + 1) : (2 * n - 1 - d);
-        int i, j;
-        if (d < n) {
-            i = k;
-            j = d - k;
-        } else {
-            j = n - 1 - k;
-            i = d - j;
+        int total = 0;
+        for (int d = 0; d < num_diagonals; ++d) {
+            int i_min = std::max(0, d - (n - 1));
+            int i_max = std::min(n - 1, d / 2);
+            int len = (i_max >= i_min) ? (i_max - i_min + 1) : 0;
+            start_i[d] = i_min;
+            diag_lengths[d] = len;
+            offsets[d] = total;
+            total += len;
         }
-        return make_pair(i, j);
+        offsets[num_diagonals] = total;
+
+        data.assign(total, init_val);
     }
+
+    inline T& at(int i, int j) {
+        int d = i + j;
+        return data[offsets[d] + (i - start_i[d])];
+    }
+
+    inline const T& at(int i, int j) const {
+        int d = i + j;
+        return data[offsets[d] + (i - start_i[d])];
+    }
+
+    inline int size() const { return n; }
+
+    inline int n_diagonals() const { return num_diagonals; }
+    
+    inline int diagonal_size(int d) const noexcept { return diag_lengths[d]; }
+
+    inline int diagonal_offset(int d) const { return offsets[d]; }
+
+    inline pair<int,int> to_cartesian(int d, int k) const {
+        int i = start_i[d] + k;
+        int j = d - i;
+        return std::make_pair(i, j);
+    }
+
 private:
     int n;
-    vector<vector<T>> diagonals;
+    int num_diagonals;
+    vector<T> data;
+    vector<int> offsets;
+    vector<int> diag_lengths;
+    vector<int> start_i;
 };

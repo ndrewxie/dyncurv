@@ -55,7 +55,7 @@ vector<vector<double>> compute_dH(
         d2_matrix[flock_2][flock_1] = d_hausdorff;
         #pragma omp critical
         {
-            cout << "\tComputed " << metric_name << "(" << flock_1 << ", " << flock_2 << ")" << endl;
+            cout << "\tComputed " << metric_name << "(" << flock_1 << ", " << flock_2 << ") = " << d_hausdorff << endl;
         }
     }
 

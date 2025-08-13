@@ -25,7 +25,8 @@ if __name__ == "__main__":
     parser.add_argument("-ets", "--equilib_time_steps", type=int, default=600, help="Number of time steps to equilibriate system")
     parser.add_argument("-k", "--k", type=int, default=1, help="k for 2k+2 to determine number of boids to sample")
     parser.add_argument("-s", "--scale", type=float, default=1.0, help="Scale to increment delta by")
-    parser.add_argument("-rs", "--rand_seed", type=int, default=1337, help="Seed for RNG")
+    parser.add_argument("-rs", "--rand_seed", type=int, default=None, help="Seed for RNG")
+    parser.add_argument("-wnth", "--write_nth", type=int, default=1, help="Write every nth timestep")
     args = parser.parse_args()
 
     # if args.recompile:
@@ -58,7 +59,8 @@ if __name__ == "__main__":
                                num_equilib_steps=args.equilib_time_steps,
                                filename=full_flock_filename,
                                scale=args.scale,
-                               seed=args.rand_seed)
+                               seed=args.rand_seed,
+                               write_every_n=args.write_nth)
 
         print("Boids generated!")
     

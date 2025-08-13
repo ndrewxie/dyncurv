@@ -136,7 +136,7 @@ class Flock:
         position %= (self.width, self.height)
 
 
-    def simulate(self, num_steps, num_equilib_steps=0, seed=None, filename=None, scale=0.01):
+    def simulate(self, num_steps, num_equilib_steps=0, seed=None, filename=None, scale=0.01, write_every_n=1):
         if seed is not None:
             np.random.seed(seed)
         if filename is not None:
@@ -146,7 +146,7 @@ class Flock:
             self.step()
             if step_num < num_equilib_steps:
                 continue
-            if filename is not None:
+            if (filename is not None) and (step_num % write_every_n == 0):
                 np.savetxt(f, self.position, fmt='%.8f', newline='\n')
         if filename is not None:
             f.close()

@@ -43,11 +43,7 @@ int main(int argc, char* argv[]) {
         in_file >> n_pts >> scale_delta >> torus_bound[0] >> torus_bound[1];
         string line;
         getline(in_file, line);
-
-        cout << "Read file: " << n_pts << ", " 
-             << scale_delta << ", " 
-             << torus_bound[0] << ", " << torus_bound[1] << endl;
-
+        
         DynPointCloud dyn_point_cloud;
         while (getline(in_file, line)) {
             stringstream ss(line);
@@ -65,6 +61,12 @@ int main(int argc, char* argv[]) {
             dyn_point_cloud.back().push_back(p);
         }
         vector<Support> pc_supports = { Support(dyn_point_cloud.size()) };
+
+        cout << "Read file: " 
+             << n_pts << " per frame, "
+             << dyn_point_cloud.size() << " frames, " 
+             << "scale_delta = " << scale_delta << ", " 
+             << "bounds = (" << torus_bound[0] << ", " << torus_bound[1] << ")" << endl;
 
         std::random_device rand_dev;
         uint32_t global_seed = rand_dev();
@@ -111,9 +113,12 @@ int main(int argc, char* argv[]) {
             }
         }
 
+	cout << "\t\tDone sampling " << pc_supports.size() << " preliminary supports" << endl;
+
         vector<Support> k_center_supports;
         vector<double> k_center_dists(pc_supports.size(), std::numeric_limits<double>::infinity());
         for (int i = 0; i < min(pc_supports.size(), (size_t)target_n_samples); i++) {
+            if (i % 100 == 0) { cout << "\t\tIteration " << i << " of k-center" << endl; }
             int max_index = max_element(k_center_dists.begin(), k_center_dists.end()) - k_center_dists.begin();
             Support max_supp = pc_supports[max_index];
             k_center_supports.push_back(max_supp);
@@ -123,6 +128,11 @@ int main(int argc, char* argv[]) {
             }
         }
         double k_center_approx_error = *std::max_element(k_center_dists.begin(), k_center_dists.end());
+
+        int n_sparse = 0;
+        int n_sparse_max = 0;
+        for (auto& s : k_center_supports) { n_sparse += s.indices.size(); n_sparse_max += s.size() * s.size(); }
+        cout << "\tAverage sparsity: " << 2.0 * (double)n_sparse / (double)n_sparse_max << endl;
 
         scale_deltas.push_back(scale_delta);
         data.push_back(dyn_point_cloud);
