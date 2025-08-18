@@ -9,10 +9,17 @@ import numpy as np
 # import sys
 import os
 import argparse
+import time
 
+INITIAL_POS_SEED = 1337
 
 class Flock:
-    def __init__(self, count=500, sep=1, ali=1, coh=1, sep_rad=50, ali_rad=100, coh_rad=150, width=500, height=250):
+    def __init__(
+        self, 
+        count=500, sep=1, ali=1, coh=1, sep_rad=50, ali_rad=100, coh_rad=150, 
+        width=500, height=250,
+        seed=None, rand_epsilon=50.0
+    ):
         self.num_pts = count
         self.width = width
         self.height = height
@@ -22,14 +29,29 @@ class Flock:
         self.velocity = np.zeros((count, 2), dtype=np.float32)
         self.position = np.zeros((count, 2), dtype=np.float32)
 
-        angle = np.random.uniform(0, 2*np.pi, count)
-        self.velocity[:, 0] = np.cos(angle)
-        self.velocity[:, 1] = np.sin(angle)
-        self.position = np.random.uniform([0, 0], [self.width, self.height], (count, 2))
-        # angle = np.random.uniform(0, 2*np.pi, count)
-        # radius = min(width, height)/2*np.random.uniform(0, 1, count)
-        # self.position[:, 0] = width/2 + np.cos(angle)*radius
-        # self.position[:, 1] = height/2 + np.sin(angle)*radius
+        # Deterministically set an initial position
+        np.random.seed(INITIAL_POS_SEED)
+        pos_angle = np.random.uniform(0, 2*np.pi, count)
+        pos_radius = min(width, height)/2*np.random.uniform(0, 1, count)
+        self.position[:, 0] = width/2 + np.cos(pos_angle)*pos_radius
+        self.position[:, 1] = height/2 + np.sin(pos_angle)*pos_radius
+
+        # Set a small deterministic velocity for simulation stability
+        vel_angle = np.random.uniform(0, 2*np.pi, count)
+        self.velocity[:, 0] = 0.01 * np.cos(vel_angle)
+        self.velocity[:, 1] = 0.01 * np.sin(vel_angle)
+
+        if seed is not None:
+            np.random.seed(seed)
+        else:
+            np.random.seed(int(time.time()))
+        # Randomly perturb initial position
+        deltas = np.random.uniform(-rand_epsilon, rand_epsilon, size=(count, 2)).astype(np.float32)
+        self.position += deltas
+
+        # Renormalize to principal UC
+        self.position[:, 0] %= width
+        self.position[:, 1] %= height
 
         self.sep = sep
         self.ali = ali
@@ -136,9 +158,7 @@ class Flock:
         position %= (self.width, self.height)
 
 
-    def simulate(self, num_steps, num_equilib_steps=0, seed=None, filename=None, scale=0.01, write_every_n=1):
-        if seed is not None:
-            np.random.seed(seed)
+    def simulate(self, num_steps, num_equilib_steps=0, filename=None, scale=0.01, write_every_n=1):
         if filename is not None:
             f = open(filename, "a")
             f.write(f"{self.num_pts}\n{scale}\n{self.width} {self.height}\n")

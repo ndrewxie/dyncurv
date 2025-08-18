@@ -10,12 +10,12 @@ class BoidsApp:
         self.width, self.height = 500, 250
         self.params = {
             'num_boids':         (tk.IntVar(value=50),      1,   250  , 1    , 'num_pts'),
-            'separation':        (tk.DoubleVar(value=0.5),  0.0, 3.0  , 0.01, 'sep'    ),
-            'alignment':         (tk.DoubleVar(value=0.5),  0.0, 3.0  , 0.01, 'ali'    ),
-            'cohesion':          (tk.DoubleVar(value=0.5),  0.0, 3.0  , 0.01, 'coh'    ),
-            'separation_radius': (tk.DoubleVar(value=75.0), 0.0, 350.0, 0.5  , 'sep_rad'),
-            'alignment_radius':  (tk.DoubleVar(value=75.0), 0.0, 350.0, 0.5  , 'ali_rad'),
-            'cohesion_radius':   (tk.DoubleVar(value=75.0), 0.0, 350.0, 0.5  , 'coh_rad')
+            'separation':        (tk.DoubleVar(value=0.5),  0.0, 5.0  , 0.05, 'sep'    ),
+            'alignment':         (tk.DoubleVar(value=0.5),  0.0, 5.0  , 0.05, 'ali'    ),
+            'cohesion':          (tk.DoubleVar(value=0.5),  0.0, 5.0  , 0.05, 'coh'    ),
+            'separation_radius': (tk.DoubleVar(value=50.0), 0.0, 350.0, 0.5  , 'sep_rad'),
+            'alignment_radius':  (tk.DoubleVar(value=100.0), 0.0, 350.0, 0.5  , 'ali_rad'),
+            'cohesion_radius':   (tk.DoubleVar(value=150.0), 0.0, 350.0, 0.5  , 'coh_rad')
         }
 
         self.root = root
@@ -78,6 +78,8 @@ class BoidsApp:
 
     def restart_simulation(self):
         self.flock = Flock(*[tup[0].get() for tup in self.params.values()])
+        for _ in range(0, 2000):
+            self.flock.step()
 
 
 if __name__ == "__main__":

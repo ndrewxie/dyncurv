@@ -49,7 +49,7 @@ if __name__ == "__main__":
                 makedirs(folder)
 
             for j in range(args.num_flocks):
-                flock = Flock(args.num_boids, sep, ali, coh, sep_rad, ali_rad, coh_rad)
+                flock = Flock(args.num_boids, sep, ali, coh, sep_rad, ali_rad, coh_rad, seed=args.rand_seed)
 
                 full_flock_filename = path.join(folder, f"flock{j}.txt")
                 if path.exists(full_flock_filename):
@@ -59,7 +59,6 @@ if __name__ == "__main__":
                                num_equilib_steps=args.equilib_time_steps,
                                filename=full_flock_filename,
                                scale=args.scale,
-                               seed=args.rand_seed,
                                write_every_n=args.write_nth)
 
         print("Boids generated!")
