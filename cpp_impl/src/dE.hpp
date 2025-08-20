@@ -5,6 +5,7 @@
 #include <limits>
 #include <cmath>
 #include <assert.h>
+#include <set>
 
 #include "support.hpp"
 
@@ -27,7 +28,7 @@ vector<vector<vector<bool>>> mask(const Support& v, double scaleDelta, double ma
 
 }
 
-double compute_dE(const Support& sup_v, const Support& sup_w, double sd_v, double sd_w){
+double compute_dE_cubic(const Support& sup_v, const Support& sup_w, double sd_v, double sd_w){
     assert(sup_v.size() == sup_w.size());
     assert(sd_v == sd_w);
 
@@ -131,4 +132,78 @@ double compute_dE(const Support& sup_v, const Support& sup_w, double sd_v, doubl
 
     return max_shift*sd;
     
+}
+
+int erosion(int a, int b, int c, int d){
+
+    if(a > c || (a == c && b > d)){
+        swap(a, c);
+        swap(b, d);
+    }
+
+    return max( min(c-a, (b-a)/2), min(d-b, (d-c)/2));
+
+}
+
+double compute_dE_quadratic(const Support& sup_v, const Support& sup_w, double sd_v, double sd_w){
+
+    assert(sup_v.size() == sup_w.size());
+    assert(sd_v == sd_w);
+
+    int n = sup_v.size();
+    double sd = sd_v;
+
+    double maxScale = 0.0;
+    for(int i = 0; i < n; i++){
+        for(int j = i; j < n; j++){
+            maxScale = max(maxScale, max(sup_v.at(i, j).second, sup_w.at(i, j).second));
+        }
+    }
+    int m = (int) ((maxScale+1) / sd);
+
+    vector<vector<vector<pair<double,double>>>> start_v(n+m, vector<vector<pair<double,double>>>(n+m, vector<pair<double,double>>(0, make_pair(0,0))));
+    vector<vector<vector<pair<double,double>>>> end_v(n+m, vector<vector<pair<double,double>>>(n+m, vector<pair<double,double>>(0, make_pair(0,0))));
+    vector<vector<vector<pair<double,double>>>> start_w(n+m, vector<vector<pair<double,double>>>(n+m, vector<pair<double,double>>(0, make_pair(0,0))));
+    vector<vector<vector<pair<double,double>>>> end_w(n+m, vector<vector<pair<double,double>>>(n+m, vector<pair<double,double>>(0, make_pair(0,0))));
+
+    for(int i = 0; i < n; i++){
+        for(int j = i; j < n; j++){
+
+            int top_shift_v = (int) (sup_v.at(i, j).second / sd);
+            int bot_shift_v = (int) (sup_v.at(i, j).first / sd);
+            int top_shift_w = (int) (sup_w.at(i, j).second / sd);
+            int bot_shift_w = (int) (sup_w.at(i, j).first / sd);
+
+            start_v[i + top_shift_v][j - top_shift_v + m].push_back(make_pair(i, j));
+            end_v[i + bot_shift_v][j - bot_shift_v + m].push_back(make_pair(i, j));
+            start_w[i + top_shift_w][j - top_shift_w + m].push_back(make_pair(i, j));
+            end_w[i + bot_shift_w][j - bot_shift_w + m].push_back(make_pair(i, j));
+
+        }
+    }
+
+    int max_shift = 0;
+
+    for(int i = m; i < 2*n-1+m; i++){
+        set<pair<int,int>> sweep_v;
+        set<pair<int,int>> sweep_w;
+        for(int j = 0; 0 <= i-j && i+j < n+m; j++){
+
+            for(pair<int,int> p : start_v[i-j][i+j]) sweep_v.insert(p);
+            for(pair<int,int> p : end_v[i-j][i+j]) sweep_v.erase(p);
+            for(pair<int,int> p : start_w[i-j][i+j]) sweep_w.insert(p);
+            for(pair<int,int> p : end_w[i-j][i+j]) sweep_w.erase(p);
+
+            int min_shift_v = (sweep_v.begin()->first)-(i-j);
+            int max_shift_v = (sweep_v.rbegin()->first)-(i-j);
+            int min_shift_w = (sweep_w.begin()->first)-(i-j);
+            int max_shift_w = (sweep_w.rbegin()->first)-(i-j);
+
+            max_shift = max(max_shift, erosion(min_shift_v, max_shift_v, min_shift_w, max_shift_w));
+
+        }
+    }
+
+    return max_shift*sd;
+
 }

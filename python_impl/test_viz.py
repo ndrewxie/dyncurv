@@ -52,7 +52,7 @@ def animate_points(snapshots, name):
 
     ani = animation.FuncAnimation(
         fig, update, frames=len(snapshots)-1, init_func=init,
-        interval=10, blit=True, repeat=True
+        interval=20, blit=True, repeat=True
     )
     ani.save(name)
 
