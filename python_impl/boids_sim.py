@@ -18,7 +18,7 @@ class Flock:
         self, 
         count=500, sep=1, ali=1, coh=1, sep_rad=50, ali_rad=100, coh_rad=150, 
         width=500, height=250,
-        seed=None, rand_epsilon=50.0
+        seed=None, rand_epsilon=25.0
     ):
         self.num_pts = count
         self.width = width
@@ -44,7 +44,7 @@ class Flock:
         if seed is not None:
             np.random.seed(seed)
         else:
-            np.random.seed(int(time.time()))
+            np.random.seed(int(time.time() * 100.0) % (2**32-1))
         # Randomly perturb initial position
         deltas = np.random.uniform(-rand_epsilon, rand_epsilon, size=(count, 2)).astype(np.float32)
         self.position += deltas
@@ -62,7 +62,6 @@ class Flock:
 
 
     def step(self):
-
         position = self.position
         velocity = self.velocity
         min_velocity = self.min_velocity
@@ -70,11 +69,14 @@ class Flock:
         max_acceleration = self.max_acceleration
         n = len(position)
 
-        dx = np.absolute(np.subtract.outer(position[:, 0], position[:, 0]))
-        dx = np.minimum(dx, self.width-dx)
-        dy = np.absolute(np.subtract.outer(position[:, 1], position[:, 1]))
-        dy = np.minimum(dy, self.height-dy)
-        distance = np.hypot(dx, dy)
+        delta = position[np.newaxis, :, :] - position[:, np.newaxis, :]
+        dx = delta[..., 0]
+        dx[dx > self.width / 2] -= self.width
+        dx[dx < -self.width / 2] += self.width
+        dy = delta[..., 1]
+        dy[dy > self.height / 2] -= self.height
+        dy[dy < -self.height / 2] += self.height
+        distance = np.sqrt(dx**2 + dy**2)
 
         # Compute common distance masks
         mask_0 = (distance > 0)
@@ -90,9 +92,9 @@ class Flock:
 
         # Separation
         mask, count = mask_1, mask_1_count
-        target = np.dstack((dx, dy))
-        target = np.divide(target, distance.reshape(n, n, 1)**2, out=target,
-                           where=distance.reshape(n, n, 1) != 0)
+        target = -delta
+        np.divide(target, distance.reshape(n, n, 1)**2, out=target,
+                  where=distance.reshape(n, n, 1) != 0)
         steer = (target*mask.reshape(n, n, 1)).sum(axis=1)/count.reshape(n, 1)
         norm = np.sqrt((steer*steer).sum(axis=1)).reshape(n, 1)
         steer = max_velocity*np.divide(steer, norm, out=steer,
@@ -131,7 +133,7 @@ class Flock:
         target = np.dot(mask, position)/count.reshape(n, 1)
 
         # Compute steering
-        desired = target - position
+        desired = (delta * mask.reshape(n, n, 1)).sum(axis=1) / count.reshape(n, 1)
         norm = np.sqrt((desired*desired).sum(axis=1)).reshape(n, 1)
         desired *= max_velocity / norm
         steer = desired - velocity

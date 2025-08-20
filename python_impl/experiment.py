@@ -2,6 +2,7 @@ import sys
 import argparse
 import subprocess
 from os import path, remove, makedirs, scandir, sep #, listdir
+from scipy.spatial.distance import squareform
 
 from boids_sim import Flock
 
@@ -21,8 +22,8 @@ if __name__ == "__main__":
     parser.add_argument("-nts", "--num_target_samples", type=int, default=250, help="Target number of 2k+2 subsets to sample per flock")
     parser.add_argument("-nms", "--num_max_samples", type=int, default=2000, help="Maximum number of 2k+2 subsets to sample per flock")
     parser.add_argument("-nb", "--num_boids", type=int, default=50, help="Number of boids to simulate")
-    parser.add_argument("-ts", "--time_steps", type=int, default=600, help="Number of time steps to simulate boids")
-    parser.add_argument("-ets", "--equilib_time_steps", type=int, default=600, help="Number of time steps to equilibriate system")
+    parser.add_argument("-ts", "--time_steps", type=int, default=1000, help="Number of time steps to simulate boids")
+    parser.add_argument("-ets", "--equilib_time_steps", type=int, default=500, help="Number of time steps to equilibriate system")
     parser.add_argument("-k", "--k", type=int, default=1, help="k for 2k+2 to determine number of boids to sample")
     parser.add_argument("-s", "--scale", type=float, default=1.0, help="Scale to increment delta by")
     parser.add_argument("-rs", "--rand_seed", type=int, default=None, help="Seed for RNG")
@@ -108,10 +109,15 @@ if __name__ == "__main__":
         # fig = plt.figure()
         # ax = fig.add_subplot(projection="3d")
         # ax.scatter(X_cmds[:, 0], X_cmds[:, 1], X_cmds[:, 2], c=sum([[col]*flocks for col in COLORS], start=[]))
-        plt.scatter(X_cmds[:, 0], X_cmds[:, 1], c=sum([[col]*flocks for col in COLORS], start=[]))
+        offset = 0
+        for behavior, col in enumerate(COLORS):
+            pts = X_cmds[offset:offset+flocks]
+            plt.scatter(pts[:,0], pts[:,1], c=col, label=f"Behavior {behavior+1}")
+            offset += flocks
+        plt.legend()
         plt.show()
 
-        Z = linkage(dist_mat, 'single')
+        Z = linkage(squareform(dist_mat), 'single')
         dn = dendrogram(Z, leaf_label_func = lambda i : 1+i//flocks)
         
         plt.show()

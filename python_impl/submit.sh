@@ -32,10 +32,10 @@ export N_SAMPLES_T=2000
 export N_SAMPLES_M=15000
 
 echo "Running $OMP_NUM_THREADS threads"
-(cd python_impl && python3 experiment.py --no_analysis --no_dist_mat --num_flocks=10 --num_boids=50 --time_steps 600 --equilib_time_steps 1000 --scale $SCALE_DELTA --write_nth 6)
+(cd python_impl && python3 experiment.py --no_analysis --no_dist_mat --num_flocks=10 --num_boids=50 --time_steps 1000 --equilib_time_steps 500 --scale $SCALE_DELTA --write_nth 10)
 (cd python_impl && python3 experiment.py --no_analysis --no_boids --num_flocks=10 --k 1 --num_target_samples $N_SAMPLES_T --num_max_samples $N_SAMPLES_M)
 (cd data && mv dist_mat.dat dist_mat_1.dat)
 (cd python_impl && python3 experiment.py --no_analysis --no_boids --num_flocks=10 --k 0 --num_target_samples $N_SAMPLES_T --num_max_samples $N_SAMPLES_M)
 (cd data && mv dist_mat.dat dist_mat_0.dat)
-(cd python_impl && python3 experiment.py --no_analysis --no_boids --num_flocks=10 --k 2 --num_target_samples $N_SAMPLES_T --num_max_samples $N_SAMPLES_M)
-(cd data && mv dist_mat.dat dist_mat_2.dat)
+#(cd python_impl && python3 experiment.py --no_analysis --no_boids --num_flocks=10 --k 2 --num_target_samples $N_SAMPLES_T --num_max_samples $N_SAMPLES_M)
+#(cd data && mv dist_mat.dat dist_mat_2.dat)
