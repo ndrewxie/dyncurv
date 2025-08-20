@@ -4,4 +4,4 @@ dependencies:
   - numpy
   - pandas
   - matplotlib
-  - dionysus
+  - scipy
