@@ -141,6 +141,8 @@ int erosion(int a, int b, int c, int d){
         swap(b, d);
     }
 
+    if(a == 0 && b == 0) return (d-c)/2;
+
     return max( min(c-a, (b-a)/2), min(d-b, (d-c)/2));
 
 }
@@ -194,10 +196,10 @@ double compute_dE_quadratic(const Support& sup_v, const Support& sup_w, double s
             for(pair<int,int> p : start_w[i-j][i+j]) sweep_w.insert(p);
             for(pair<int,int> p : end_w[i-j][i+j]) sweep_w.erase(p);
 
-            int min_shift_v = (sweep_v.begin()->first)-(i-j);
-            int max_shift_v = (sweep_v.rbegin()->first)-(i-j);
-            int min_shift_w = (sweep_w.begin()->first)-(i-j);
-            int max_shift_w = (sweep_w.rbegin()->first)-(i-j);
+            int min_shift_v = sweep_v.empty() ? 0 : (sweep_v.begin()->first)-(i-j);
+            int max_shift_v = sweep_v.empty() ? 0 : (sweep_v.rbegin()->first)-(i-j);
+            int min_shift_w = sweep_w.empty() ? 0 : (sweep_w.begin()->first)-(i-j);
+            int max_shift_w = sweep_w.empty() ? 0 : (sweep_w.rbegin()->first)-(i-j);
 
             max_shift = max(max_shift, erosion(min_shift_v, max_shift_v, min_shift_w, max_shift_w));
 
