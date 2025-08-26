@@ -10,13 +10,13 @@
 
 using namespace std;
 
-typedef pair<double, double> Interval;
+typedef pair<float, float> Interval;
 typedef array<Interval, 2> IntervalArr;
 
 IntervalArr subtract_ints(Interval i1, Interval i2) {
     Interval empty = make_pair(1.0, 0.0);
-    double a1 = i1.first, b1 = i1.second;
-    double a2 = i2.first, b2 = i2.second;
+    float a1 = i1.first, b1 = i1.second;
+    float a2 = i2.first, b2 = i2.second;
 
     if (a1 >= b1) {
         return { empty, empty };
@@ -41,8 +41,8 @@ template<bool should_write>
 bool filter_intervals(IntervalArr& segs, Interval range1, Interval range2) {
     bool ret_val = false;
     for (int i = 0; i < segs.size(); i++) {
-        double low = max(segs[i].first, max(range1.first, range2.first));
-        double high = min(segs[i].second, min(range1.second, range2.second));
+        float low = max(segs[i].first, max(range1.first, range2.first));
+        float high = min(segs[i].second, min(range1.second, range2.second));
         ret_val = ret_val | (low < high);        
         if (should_write) {
             segs[i] = make_pair(low, high);
@@ -51,11 +51,11 @@ bool filter_intervals(IntervalArr& segs, Interval range1, Interval range2) {
     return ret_val;
 }
 
-double compute_max_rad(
-    int i, int j, IntervalArr seg, const Support& sup_v, int curr_high, double sd_v
+float compute_max_rad(
+    int i, int j, IntervalArr seg, const Support& sup_v, int curr_high, float sd_v
 ) {
     int n = sup_v.size();
-    int shift_limit_out = min(i, n - j - 1);
+    int shift_limit_out = min(n / 2, max(i, n - j - 1));
     int shift_limit_in = (j - i + 1) / 2;
 
     int low = curr_high;
@@ -64,17 +64,22 @@ double compute_max_rad(
     int max_rad = high+1;
     while (low <= high) {
         int mid = low + (high-low)/2;
-        double midf = double(mid);
+        float midf = float(mid);
         
         int shift_in = min(shift_limit_in, mid);
         int shift_out = mid;
+
+        int low_shift_in = i+shift_in;
+        int high_shift_in = j-shift_in;
+        int low_shift_out = max(0, i-shift_out);
+        int high_shift_out = min(n-1, j+shift_out);
         Interval mid_seg_low = make_pair(
-            sup_v.at(i+shift_in, j-shift_in).first + sd_v * midf, 
-            sup_v.at(i+shift_in, j-shift_in).second + sd_v * midf
+            sup_v.at(low_shift_in, high_shift_in).first + sd_v * midf, 
+            sup_v.at(i+shift_in, high_shift_in).second + sd_v * midf
         );
         Interval mid_seg_high = make_pair(
-            sup_v.at(i-shift_out, j+shift_out).first - sd_v * midf, 
-            sup_v.at(i-shift_out, j+shift_out).second - sd_v * midf
+            sup_v.at(low_shift_out, high_shift_out).first - sd_v * midf, 
+            sup_v.at(low_shift_out, high_shift_out).second - sd_v * midf
         );
 
         bool is_nonempty = filter_intervals<false>(seg, mid_seg_low, mid_seg_high);
@@ -89,12 +94,12 @@ double compute_max_rad(
     return max_rad;
 }
 
-double compute_left_d2(const Support& sup_v, const Support& sup_w, double sd_v, double sd_w) {
+float compute_left_d2(const Support& sup_v, const Support& sup_w, float sd_v, float sd_w) {
     assert(sup_v.size() == sup_w.size());
 
-    Interval full = make_pair(-numeric_limits<double>::infinity(), numeric_limits<double>::infinity());
+    Interval full = make_pair(-numeric_limits<float>::infinity(), numeric_limits<float>::infinity());
 
-    double max_d2 = 0.0;
+    float max_d2 = 0.0;
     for (auto& indices : sup_v.indices) {
         int i = indices.first;
         int j = indices.second;
@@ -103,13 +108,13 @@ double compute_left_d2(const Support& sup_v, const Support& sup_w, double sd_v, 
         IntervalArr delta = subtract_ints(int_v, int_w);
         bool delta_nonempty = filter_intervals<true>(delta, full, full);
         if (!delta_nonempty) { continue; } 
-        double max_rad = compute_max_rad(i, j, delta, sup_v, max_d2, sd_v);
+        float max_rad = compute_max_rad(i, j, delta, sup_v, max_d2, sd_v);
         max_d2 = max(max_d2, max_rad);
     }
     return max_d2 * sd_v;
 }
 
-double compute_d2(const Support& sup_v, const Support& sup_w, double sd_v, double sd_w) {
+float compute_d2(const Support& sup_v, const Support& sup_w, float sd_v, float sd_w) {
     return max(
         compute_left_d2(sup_v, sup_w, sd_v, sd_v),
         compute_left_d2(sup_w, sup_v, sd_v, sd_w)

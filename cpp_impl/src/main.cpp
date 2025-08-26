@@ -7,6 +7,7 @@
 #include <random>
 #include <omp.h>
 #include <chrono>
+#include <ctime>
 
 #include "support.hpp"
 #include "d2.hpp"
@@ -29,7 +30,7 @@ int main(int argc, char* argv[]) {
 
     ofstream out_file(argv[4]);
 
-    vector<double> scale_deltas;
+    vector<float> scale_deltas;
     vector<DynPointCloud> data;
     vector<vector<Support>> supports;
     for (int argv_index = 5; argv_index < argc; argv_index++) {
@@ -38,8 +39,8 @@ int main(int argc, char* argv[]) {
             cout << "Error: cannot open " << argv[argv_index] << endl;
             return 1;
         }
-        double scale_delta;
-        vector<double> torus_bound(2, 0.0);
+        float scale_delta;
+        vector<float> torus_bound(2, 0.0);
         int n_pts;
         in_file >> n_pts >> scale_delta >> torus_bound[0] >> torus_bound[1];
         string line;
@@ -49,7 +50,7 @@ int main(int argc, char* argv[]) {
         while (getline(in_file, line)) {
             stringstream ss(line);
             Point p;
-            double coord_val;
+            float coord_val;
             while (ss >> coord_val) {
                 p.push_back(coord_val);
             }
@@ -77,7 +78,7 @@ int main(int argc, char* argv[]) {
 
             vector<Support> local_pc_supports;
             vector<int> chosen_indices;
-            vector<double> scratch_distances;
+            vector<float> scratch_distances;
             DynPointCloud subsample;
 
             std::mt19937 gen(global_seed + tid);
@@ -117,7 +118,7 @@ int main(int argc, char* argv[]) {
         cout << "\t\tDone sampling " << pc_supports.size() << " preliminary supports" << endl;
 
         vector<Support> k_center_supports;
-        vector<double> k_center_dists(pc_supports.size(), std::numeric_limits<double>::infinity());
+        vector<float> k_center_dists(pc_supports.size(), std::numeric_limits<float>::infinity());
         for (int i = 0; i < min(pc_supports.size(), (size_t)target_n_samples); i++) {
             if (i % 100 == 0) { cout << "\t\tIteration " << i << " of k-center" << endl; }
             int max_index = max_element(k_center_dists.begin(), k_center_dists.end()) - k_center_dists.begin();
@@ -128,28 +129,39 @@ int main(int argc, char* argv[]) {
                 k_center_dists[j] = min(k_center_dists[j], compute_d2(max_supp, pc_supports[j], scale_delta, scale_delta));
             }
         }
-        double k_center_approx_error = *std::max_element(k_center_dists.begin(), k_center_dists.end());
+        float k_center_approx_error = *std::max_element(k_center_dists.begin(), k_center_dists.end());
 
         int n_sparse = 0;
         int n_sparse_max = 0;
         for (auto& s : k_center_supports) { n_sparse += s.indices.size(); n_sparse_max += s.size() * s.size(); }
-        cout << "\tAverage sparsity: " << 2.0 * (double)n_sparse / (double)n_sparse_max << endl;
+        cout << "\tAverage sparsity: " << 2.0 * (float)n_sparse / (float)n_sparse_max << endl;
 
         scale_deltas.push_back(scale_delta);
         data.push_back(dyn_point_cloud);
         supports.push_back(k_center_supports);
         cout << "\tSampled " << k_center_supports.size() << " supports with approximation error " << k_center_approx_error << endl;
     }
-    vector<vector<SupportRepnDE>> dE_support_rep = dE_cvt_supps(supports, scale_deltas);
+
+    int n_files = supports.size();
+
+    auto curr_time = chrono::system_clock::now();
+    time_t current_time_t = chrono::system_clock::to_time_t(curr_time);
+    cout << "Done sampling at: " << ctime(&current_time_t)  << endl;
     
     cout << "Computing pairwise d2..." << endl;
     chrono::steady_clock::time_point d2_begin = chrono::steady_clock::now();
-    vector<vector<double>> d2_matrix = compute_dH(supports, scale_deltas, compute_d2, "d2");
-    for (const auto& row : d2_matrix) {
-        for (const auto& elem : row) {
-            out_file << elem << "\t";
+    for (int flock_1 = 0; flock_1 < n_files; flock_1++) {
+        for (int flock_2 = flock_1 + 1; flock_2 < n_files; flock_2++) {
+            float d_hausdorff = compute_dH(
+                supports[flock_1], supports[flock_2], 
+                scale_deltas[flock_1], scale_deltas[flock_2],
+                compute_d2
+            );
+            out_file << d_hausdorff << "\t";
+            cout << d_hausdorff << "\t";
         }
         out_file << endl;
+        cout << endl;
     }
     chrono::steady_clock::time_point d2_end = chrono::steady_clock::now();
     cout << "Done computing pairwise d2 in " 
@@ -159,17 +171,24 @@ int main(int argc, char* argv[]) {
 
     cout << "Computing pairwise dE..." << endl;
     chrono::steady_clock::time_point dE_begin = chrono::steady_clock::now();
-    vector<vector<double>> dE_matrix = compute_dH(dE_support_rep, scale_deltas, compute_dE_quadratic, "dE");
-    for (const auto& row : dE_matrix) {
-        for (const auto& elem : row) {
-            out_file << elem << "\t";
+    for (int flock_1 = 0; flock_1 < n_files; flock_1++) {
+        for (int flock_2 = flock_1 + 1; flock_2 < n_files; flock_2++) {
+            auto flock_1_repn = dE_cvt_supps(supports, scale_deltas, flock_1);
+            auto flock_2_repn = dE_cvt_supps(supports, scale_deltas, flock_2);
+            float d_hausdorff = compute_dH(
+                flock_1_repn, flock_2_repn, 
+                scale_deltas[flock_1], scale_deltas[flock_2],
+                compute_dE_quadratic
+            );
+            out_file << d_hausdorff << "\t";
+            cout << d_hausdorff << "\t";
         }
         out_file << endl;
+        cout << endl;
     }
     chrono::steady_clock::time_point dE_end = chrono::steady_clock::now();
     cout << "Done computing pairwise dE in " 
          << chrono::duration_cast<chrono::microseconds>(dE_end - dE_begin).count() << endl;
- 
 
     out_file.close();
     return 0;

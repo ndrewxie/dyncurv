@@ -9,7 +9,7 @@
 
 using namespace std;
 
-typedef vector<double> Point;
+typedef vector<float> Point;
 typedef vector<Point> PointCloud;
 typedef vector<PointCloud> DynPointCloud;
 
@@ -18,13 +18,13 @@ public:
     vector<pair<int, int>> indices;
 
     Support(int n_time) : mat(n_time, make_pair(0.0, 0.0)) {};
-    Support(DynPointCloud& dpc, vector<double>& bounds, vector<double>& distances);
+    Support(DynPointCloud& dpc, vector<float>& bounds, vector<float>& distances);
 
     int size() const { return mat.size(); }
-    pair<double, double>& at(int i, int j) { return mat.at(i, j); }
-    const pair<double, double>& at (int i, int j) const { return mat.at(i, j); }
+    pair<float, float>& at(int i, int j) { return mat.at(i, j); }
+    const pair<float, float>& at (int i, int j) const { return mat.at(i, j); }
 private:
-    DiagonalMatrix<pair<double, double>> mat;
+    DiagonalMatrix<pair<float, float>> mat;
 
     void build_indices();
 };

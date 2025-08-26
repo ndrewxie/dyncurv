@@ -78,6 +78,7 @@ if __name__ == "__main__":
                 for file in scandir(folder):
                     if file.is_file() and "flock" in file.name:
                         flock_paths.append(file.path)
+        flock_paths.sort()
 
         dyncurv_exe = "dyncurv"
         if sys.platform.startswith('win'):

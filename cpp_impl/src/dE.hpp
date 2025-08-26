@@ -12,10 +12,10 @@
 
 using namespace std;
 
-typedef vector<vector<vector<pair<double,double>>>> HalfSupportRepnDE;
+typedef vector<vector<vector<pair<float,float>>>> HalfSupportRepnDE;
 typedef tuple<int, HalfSupportRepnDE, HalfSupportRepnDE> SupportRepnDE;
 
-vector<vector<vector<bool>>> mask(const Support& v, double scaleDelta, double maxScale){ 
+vector<vector<vector<bool>>> mask(const Support& v, float scaleDelta, float maxScale){ 
     int n = v.size();
     int m = (int) ((maxScale+1) / scaleDelta);
 
@@ -32,14 +32,14 @@ vector<vector<vector<bool>>> mask(const Support& v, double scaleDelta, double ma
 
 }
 
-double compute_dE_cubic(const Support& sup_v, const Support& sup_w, double sd_v, double sd_w){
+float compute_dE_cubic(const Support& sup_v, const Support& sup_w, float sd_v, float sd_w){
     assert(sup_v.size() == sup_w.size());
     assert(sd_v == sd_w);
 
     int n = sup_v.size();
-    double sd = sd_v;
+    float sd = sd_v;
 
-    double maxScale = 0.0;
+    float maxScale = 0.0;
     for(int i = 0; i < n; i++){
         for(int j = i; j < n; j++){
             maxScale = max(maxScale, max(sup_v.at(i, j).second, sup_w.at(i, j).second));
@@ -151,52 +151,52 @@ int erosion(int a, int b, int c, int d){
 
 }
 
-vector<vector<SupportRepnDE>> dE_cvt_supps(
-    const vector<vector<Support>>& supp_list, const vector<double>& scale_deltas
+vector<SupportRepnDE> dE_cvt_supps(
+    const vector<vector<Support>>& supp_list, const vector<float>& scale_deltas,
+    int target_index
 ) {
-    for (double sd : scale_deltas) {
+    cout << "Start convert supports" << endl;
+    for (float sd : scale_deltas) {
         assert(sd == scale_deltas[0]);
     }
     int n = supp_list[0][0].size();
-    double sd = scale_deltas[0];
+    float sd = scale_deltas[0];
 
-    double maxScale = 0.0;
+    cout << "n = " << n << ", sd = " << sd << endl;
+    float maxScale = 0.0;
     for (const auto& sl : supp_list) {
         for (const auto& s : sl) {
             for (int i = 0; i < n; i++) {
                 for (int j = i; j < n; j++) {
-                    maxScale = max(maxScale, max(s.at(i, j).second, s.at(i, j).second));
+                    maxScale = max(maxScale, s.at(i, j).second);
                 }
             }
         }
     }
     int m = (int) ((maxScale+1) / sd);
+    cout << "maxscale = " << maxScale << ", m = " << m << endl;
 
-    vector<vector<SupportRepnDE>> r_supp_list;
-    for (const auto& supps : supp_list) {
-        vector<SupportRepnDE> r_supps;
-        for (const auto& sup_v : supps) {
-            HalfSupportRepnDE start_v(n+m, vector<vector<pair<double,double>>>(n+m, vector<pair<double,double>>(0, make_pair(0,0))));
-            HalfSupportRepnDE end_v(n+m, vector<vector<pair<double,double>>>(n+m, vector<pair<double,double>>(0, make_pair(0,0))));
-            for(int i = 0; i < n; i++) {
-                for(int j = i; j < n; j++){
+    vector<SupportRepnDE> r_supps;
+    for (const auto& sup_v : supp_list[target_index]) {
+        HalfSupportRepnDE start_v(n+m, vector<vector<pair<float,float>>>(n+m, vector<pair<float,float>>(0, make_pair(0,0))));
+        HalfSupportRepnDE end_v(n+m, vector<vector<pair<float,float>>>(n+m, vector<pair<float,float>>(0, make_pair(0,0))));
+        for(int i = 0; i < n; i++) {
+            for(int j = i; j < n; j++){
 
-                    int top_shift_v = (int) (sup_v.at(i, j).second / sd);
-                    int bot_shift_v = (int) (sup_v.at(i, j).first / sd);
+                int top_shift_v = (int) (sup_v.at(i, j).second / sd);
+                int bot_shift_v = (int) (sup_v.at(i, j).first / sd);
 
-                    start_v[i + top_shift_v][j - top_shift_v + m].push_back(make_pair(i, j));
-                    end_v[i + bot_shift_v][j - bot_shift_v + m].push_back(make_pair(i, j));
-                }
+                start_v[i + top_shift_v][j - top_shift_v + m].push_back(make_pair(i, j));
+                end_v[i + bot_shift_v][j - bot_shift_v + m].push_back(make_pair(i, j));
             }
-            r_supps.push_back(make_tuple(n, start_v, end_v));
         }
-        r_supp_list.push_back(r_supps);
+        r_supps.push_back(make_tuple(n, start_v, end_v));
     }
 
-    return r_supp_list;
+    return r_supps;
 }
 
-double compute_dE_quadratic(const SupportRepnDE& sup_v, const SupportRepnDE& sup_w, double sd_v, double sd_w) {
+float compute_dE_quadratic(const SupportRepnDE& sup_v, const SupportRepnDE& sup_w, float sd_v, float sd_w) {
     int max_shift = 0;
     int n = get<0>(sup_v);
     int m = get<1>(sup_v).size() - n;
@@ -225,15 +225,15 @@ double compute_dE_quadratic(const SupportRepnDE& sup_v, const SupportRepnDE& sup
 }
 
 /*
-double compute_dE_quadratic(const Support& sup_v, const Support& sup_w, double sd_v, double sd_w){
+float compute_dE_quadratic(const Support& sup_v, const Support& sup_w, float sd_v, float sd_w){
 
     assert(sup_v.size() == sup_w.size());
     assert(sd_v == sd_w);
 
     int n = sup_v.size();
-    double sd = sd_v;
+    float sd = sd_v;
 
-    double maxScale = 0.0;
+    float maxScale = 0.0;
     for(int i = 0; i < n; i++){
         for(int j = i; j < n; j++){
             maxScale = max(maxScale, max(sup_v.at(i, j).second, sup_w.at(i, j).second));
@@ -241,10 +241,10 @@ double compute_dE_quadratic(const Support& sup_v, const Support& sup_w, double s
     }
     int m = (int) ((maxScale+1) / sd);
 
-    vector<vector<vector<pair<double,double>>>> start_v(n+m, vector<vector<pair<double,double>>>(n+m, vector<pair<double,double>>(0, make_pair(0,0))));
-    vector<vector<vector<pair<double,double>>>> end_v(n+m, vector<vector<pair<double,double>>>(n+m, vector<pair<double,double>>(0, make_pair(0,0))));
-    vector<vector<vector<pair<double,double>>>> start_w(n+m, vector<vector<pair<double,double>>>(n+m, vector<pair<double,double>>(0, make_pair(0,0))));
-    vector<vector<vector<pair<double,double>>>> end_w(n+m, vector<vector<pair<double,double>>>(n+m, vector<pair<double,double>>(0, make_pair(0,0))));
+    vector<vector<vector<pair<float,float>>>> start_v(n+m, vector<vector<pair<float,float>>>(n+m, vector<pair<float,float>>(0, make_pair(0,0))));
+    vector<vector<vector<pair<float,float>>>> end_v(n+m, vector<vector<pair<float,float>>>(n+m, vector<pair<float,float>>(0, make_pair(0,0))));
+    vector<vector<vector<pair<float,float>>>> start_w(n+m, vector<vector<pair<float,float>>>(n+m, vector<pair<float,float>>(0, make_pair(0,0))));
+    vector<vector<vector<pair<float,float>>>> end_w(n+m, vector<vector<pair<float,float>>>(n+m, vector<pair<float,float>>(0, make_pair(0,0))));
 
     for(int i = 0; i < n; i++){
         for(int j = i; j < n; j++){
