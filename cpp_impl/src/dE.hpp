@@ -6,10 +6,14 @@
 #include <cmath>
 #include <assert.h>
 #include <set>
+#include <tuple>
 
 #include "support.hpp"
 
 using namespace std;
+
+typedef vector<vector<vector<pair<double,double>>>> HalfSupportRepnDE;
+typedef tuple<int, HalfSupportRepnDE, HalfSupportRepnDE> SupportRepnDE;
 
 vector<vector<vector<bool>>> mask(const Support& v, double scaleDelta, double maxScale){ 
     int n = v.size();
@@ -147,6 +151,80 @@ int erosion(int a, int b, int c, int d){
 
 }
 
+vector<vector<SupportRepnDE>> dE_cvt_supps(
+    const vector<vector<Support>>& supp_list, const vector<double>& scale_deltas
+) {
+    for (double sd : scale_deltas) {
+        assert(sd == scale_deltas[0]);
+    }
+    int n = supp_list[0][0].size();
+    double sd = scale_deltas[0];
+
+    double maxScale = 0.0;
+    for (const auto& sl : supp_list) {
+        for (const auto& s : sl) {
+            for (int i = 0; i < n; i++) {
+                for (int j = i; j < n; j++) {
+                    maxScale = max(maxScale, max(s.at(i, j).second, s.at(i, j).second));
+                }
+            }
+        }
+    }
+    int m = (int) ((maxScale+1) / sd);
+
+    vector<vector<SupportRepnDE>> r_supp_list;
+    for (const auto& supps : supp_list) {
+        vector<SupportRepnDE> r_supps;
+        for (const auto& sup_v : supps) {
+            HalfSupportRepnDE start_v(n+m, vector<vector<pair<double,double>>>(n+m, vector<pair<double,double>>(0, make_pair(0,0))));
+            HalfSupportRepnDE end_v(n+m, vector<vector<pair<double,double>>>(n+m, vector<pair<double,double>>(0, make_pair(0,0))));
+            for(int i = 0; i < n; i++) {
+                for(int j = i; j < n; j++){
+
+                    int top_shift_v = (int) (sup_v.at(i, j).second / sd);
+                    int bot_shift_v = (int) (sup_v.at(i, j).first / sd);
+
+                    start_v[i + top_shift_v][j - top_shift_v + m].push_back(make_pair(i, j));
+                    end_v[i + bot_shift_v][j - bot_shift_v + m].push_back(make_pair(i, j));
+                }
+            }
+            r_supps.push_back(make_tuple(n, start_v, end_v));
+        }
+        r_supp_list.push_back(r_supps);
+    }
+
+    return r_supp_list;
+}
+
+double compute_dE_quadratic(const SupportRepnDE& sup_v, const SupportRepnDE& sup_w, double sd_v, double sd_w) {
+    int max_shift = 0;
+    int n = get<0>(sup_v);
+    int m = get<1>(sup_v).size() - n;
+
+    for(int i = m; i < 2*n-1+m; i++){
+        set<pair<int,int>> sweep_v;
+        set<pair<int,int>> sweep_w;
+        for(int j = 0; 0 <= i-j && i+j < n+m; j++){
+
+            for(pair<int,int> p : get<1>(sup_v)[i-j][i+j]) sweep_v.insert(p);
+            for(pair<int,int> p : get<2>(sup_v)[i-j][i+j]) sweep_v.erase(p);
+            for(pair<int,int> p : get<1>(sup_w)[i-j][i+j]) sweep_w.insert(p);
+            for(pair<int,int> p : get<2>(sup_w)[i-j][i+j]) sweep_w.erase(p);
+
+            int min_shift_v = sweep_v.empty() ? 0 : (sweep_v.begin()->first)-(i-j);
+            int max_shift_v = sweep_v.empty() ? 0 : (sweep_v.rbegin()->first)-(i-j);
+            int min_shift_w = sweep_w.empty() ? 0 : (sweep_w.begin()->first)-(i-j);
+            int max_shift_w = sweep_w.empty() ? 0 : (sweep_w.rbegin()->first)-(i-j);
+
+            max_shift = max(max_shift, erosion(min_shift_v, max_shift_v, min_shift_w, max_shift_w));
+
+        }
+    }
+
+    return max_shift*sd_v;
+}
+
+/*
 double compute_dE_quadratic(const Support& sup_v, const Support& sup_w, double sd_v, double sd_w){
 
     assert(sup_v.size() == sup_w.size());
@@ -209,3 +287,4 @@ double compute_dE_quadratic(const Support& sup_v, const Support& sup_w, double s
     return max_shift*sd;
 
 }
+*/

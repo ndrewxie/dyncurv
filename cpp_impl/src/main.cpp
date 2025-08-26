@@ -6,6 +6,7 @@
 #include <vector>
 #include <random>
 #include <omp.h>
+#include <chrono>
 
 #include "support.hpp"
 #include "d2.hpp"
@@ -113,7 +114,7 @@ int main(int argc, char* argv[]) {
             }
         }
 
-	cout << "\t\tDone sampling " << pc_supports.size() << " preliminary supports" << endl;
+        cout << "\t\tDone sampling " << pc_supports.size() << " preliminary supports" << endl;
 
         vector<Support> k_center_supports;
         vector<double> k_center_dists(pc_supports.size(), std::numeric_limits<double>::infinity());
@@ -139,10 +140,10 @@ int main(int argc, char* argv[]) {
         supports.push_back(k_center_supports);
         cout << "\tSampled " << k_center_supports.size() << " supports with approximation error " << k_center_approx_error << endl;
     }
-
-    int n_files = data.size();
+    vector<vector<SupportRepnDE>> dE_support_rep = dE_cvt_supps(supports, scale_deltas);
     
     cout << "Computing pairwise d2..." << endl;
+    chrono::steady_clock::time_point d2_begin = chrono::steady_clock::now();
     vector<vector<double>> d2_matrix = compute_dH(supports, scale_deltas, compute_d2, "d2");
     for (const auto& row : d2_matrix) {
         for (const auto& elem : row) {
@@ -150,17 +151,25 @@ int main(int argc, char* argv[]) {
         }
         out_file << endl;
     }
+    chrono::steady_clock::time_point d2_end = chrono::steady_clock::now();
+    cout << "Done computing pairwise d2 in " 
+         << chrono::duration_cast<chrono::microseconds>(d2_end - d2_begin).count() << endl;
 
-    /*
- *     cout << "Computing pairwise dE..." << endl;
- *         vector<vector<double>> dE_matrix = compute_dH(supports, scale_deltas, compute_dE, "dE");
- *             for (const auto& row : dE_matrix) {
- *                     for (const auto& elem : row) {
- *                                 out_file << elem << "\t";
- *                                         }
- *                                                 out_file << endl;
- *                                                     }
- *                                                         */
+    out_file << endl;
+
+    cout << "Computing pairwise dE..." << endl;
+    chrono::steady_clock::time_point dE_begin = chrono::steady_clock::now();
+    vector<vector<double>> dE_matrix = compute_dH(dE_support_rep, scale_deltas, compute_dE_quadratic, "dE");
+    for (const auto& row : dE_matrix) {
+        for (const auto& elem : row) {
+            out_file << elem << "\t";
+        }
+        out_file << endl;
+    }
+    chrono::steady_clock::time_point dE_end = chrono::steady_clock::now();
+    cout << "Done computing pairwise dE in " 
+         << chrono::duration_cast<chrono::microseconds>(dE_end - dE_begin).count() << endl;
+ 
 
     out_file.close();
     return 0;

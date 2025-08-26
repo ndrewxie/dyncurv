@@ -18,7 +18,7 @@ class Flock:
         self, 
         count=500, sep=1, ali=1, coh=1, sep_rad=50, ali_rad=100, coh_rad=150, 
         width=500, height=250,
-        seed=None, rand_epsilon=25.0
+        seed=None, rand_epsilon=50.0
     ):
         self.num_pts = count
         self.width = width
@@ -135,7 +135,8 @@ class Flock:
         # Compute steering
         desired = (delta * mask.reshape(n, n, 1)).sum(axis=1) / count.reshape(n, 1)
         norm = np.sqrt((desired*desired).sum(axis=1)).reshape(n, 1)
-        desired *= max_velocity / norm
+        desired = max_velocity*np.divide(desired, norm, out=desired,
+                                       where=norm != 0)
         steer = desired - velocity
 
         # Limit acceleration
