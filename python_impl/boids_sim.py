@@ -18,7 +18,7 @@ class Flock:
         self, 
         count=500, sep=1, ali=1, coh=1, sep_rad=50, ali_rad=100, coh_rad=150, 
         width=500, height=250,
-        seed=None, rand_epsilon=50.0
+        seed=None, rand_epsilon=25.0
     ):
         self.num_pts = count
         self.width = width

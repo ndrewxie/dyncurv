@@ -152,32 +152,17 @@ int erosion(int a, int b, int c, int d){
 }
 
 vector<SupportRepnDE> dE_cvt_supps(
-    const vector<vector<Support>>& supp_list, const vector<float>& scale_deltas,
-    int target_index
+    const vector<Support>& supp_list, double maxScale, const vector<float>& scale_deltas
 ) {
-    cout << "Start convert supports" << endl;
     for (float sd : scale_deltas) {
         assert(sd == scale_deltas[0]);
     }
-    int n = supp_list[0][0].size();
+    int n = supp_list[0].size();
     float sd = scale_deltas[0];
-
-    cout << "n = " << n << ", sd = " << sd << endl;
-    float maxScale = 0.0;
-    for (const auto& sl : supp_list) {
-        for (const auto& s : sl) {
-            for (int i = 0; i < n; i++) {
-                for (int j = i; j < n; j++) {
-                    maxScale = max(maxScale, s.at(i, j).second);
-                }
-            }
-        }
-    }
     int m = (int) ((maxScale+1) / sd);
-    cout << "maxscale = " << maxScale << ", m = " << m << endl;
 
     vector<SupportRepnDE> r_supps;
-    for (const auto& sup_v : supp_list[target_index]) {
+    for (const auto& sup_v : supp_list) {
         HalfSupportRepnDE start_v(n+m, vector<vector<pair<float,float>>>(n+m, vector<pair<float,float>>(0, make_pair(0,0))));
         HalfSupportRepnDE end_v(n+m, vector<vector<pair<float,float>>>(n+m, vector<pair<float,float>>(0, make_pair(0,0))));
         for(int i = 0; i < n; i++) {
@@ -196,14 +181,18 @@ vector<SupportRepnDE> dE_cvt_supps(
     return r_supps;
 }
 
-float compute_dE_quadratic(const SupportRepnDE& sup_v, const SupportRepnDE& sup_w, float sd_v, float sd_w) {
+float compute_dE_quadratic(
+    SupportRepnDE& sup_v, SupportRepnDE& sup_w, 
+    float sd_v, float sd_w,
+    set<pair<int, int>>& sweep_v, set<pair<int, int>>& sweep_w
+) {
     int max_shift = 0;
     int n = get<0>(sup_v);
     int m = get<1>(sup_v).size() - n;
 
+    sweep_v.clear();
+    sweep_w.clear();
     for(int i = m; i < 2*n-1+m; i++){
-        set<pair<int,int>> sweep_v;
-        set<pair<int,int>> sweep_w;
         for(int j = 0; 0 <= i-j && i+j < n+m; j++){
 
             for(pair<int,int> p : get<1>(sup_v)[i-j][i+j]) sweep_v.insert(p);
@@ -219,6 +208,8 @@ float compute_dE_quadratic(const SupportRepnDE& sup_v, const SupportRepnDE& sup_
             max_shift = max(max_shift, erosion(min_shift_v, max_shift_v, min_shift_w, max_shift_w));
 
         }
+	    sweep_v.clear();
+	    sweep_w.clear();
     }
 
     return max_shift*sd_v;

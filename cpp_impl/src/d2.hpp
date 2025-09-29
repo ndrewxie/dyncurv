@@ -5,6 +5,7 @@
 #include <limits>
 #include <cmath>
 #include <assert.h>
+#include <set>
 
 #include "support.hpp"
 
@@ -114,7 +115,19 @@ float compute_left_d2(const Support& sup_v, const Support& sup_w, float sd_v, fl
     return max_d2 * sd_v;
 }
 
-float compute_d2(const Support& sup_v, const Support& sup_w, float sd_v, float sd_w) {
+float compute_d2_dummy(
+    const Support& sup_v, const Support& sup_w, float sd_v, float sd_w,
+    set<pair<int, int>>& sweep_v, set<pair<int, int>>& sweep_w
+) {
+    return max(
+        compute_left_d2(sup_v, sup_w, sd_v, sd_v),
+        compute_left_d2(sup_w, sup_v, sd_v, sd_w)
+    );
+}
+
+float compute_d2(
+    const Support& sup_v, const Support& sup_w, float sd_v, float sd_w
+) {
     return max(
         compute_left_d2(sup_v, sup_w, sd_v, sd_v),
         compute_left_d2(sup_w, sup_v, sd_v, sd_w)

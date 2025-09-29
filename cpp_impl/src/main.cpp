@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
         in_file >> n_pts >> scale_delta >> torus_bound[0] >> torus_bound[1];
         string line;
         getline(in_file, line);
-        
+
         DynPointCloud dyn_point_cloud;
         while (getline(in_file, line)) {
             stringstream ss(line);
@@ -64,10 +64,10 @@ int main(int argc, char* argv[]) {
         }
         vector<Support> pc_supports = { Support(dyn_point_cloud.size()) };
 
-        cout << "Read file: " 
+        cout << "Read file: "
              << n_pts << " per frame, "
-             << dyn_point_cloud.size() << " frames, " 
-             << "scale_delta = " << scale_delta << ", " 
+             << dyn_point_cloud.size() << " frames, "
+             << "scale_delta = " << scale_delta << ", "
              << "bounds = (" << torus_bound[0] << ", " << torus_bound[1] << ")" << endl;
 
         std::random_device rand_dev;
@@ -122,6 +122,10 @@ int main(int argc, char* argv[]) {
         for (int i = 0; i < min(pc_supports.size(), (size_t)target_n_samples); i++) {
             if (i % 100 == 0) { cout << "\t\tIteration " << i << " of k-center" << endl; }
             int max_index = max_element(k_center_dists.begin(), k_center_dists.end()) - k_center_dists.begin();
+            if (k_center_dists[max_index] == 0.0) {
+                cout << "Ending k-center at iteration " << i << " / " << min(pc_supports.size(), (size_t)target_n_samples) << endl;
+                break;
+            }
             Support max_supp = pc_supports[max_index];
             k_center_supports.push_back(max_supp);
             #pragma omp parallel for schedule(static)
@@ -147,50 +151,112 @@ int main(int argc, char* argv[]) {
     auto curr_time = chrono::system_clock::now();
     time_t current_time_t = chrono::system_clock::to_time_t(curr_time);
     cout << "Done sampling at: " << ctime(&current_time_t)  << endl;
-    
-    cout << "Computing pairwise d2..." << endl;
-    chrono::steady_clock::time_point d2_begin = chrono::steady_clock::now();
-    for (int flock_1 = 0; flock_1 < n_files; flock_1++) {
-        for (int flock_2 = flock_1 + 1; flock_2 < n_files; flock_2++) {
-            float d_hausdorff = compute_dH(
-                supports[flock_1], supports[flock_2], 
-                scale_deltas[flock_1], scale_deltas[flock_2],
-                compute_d2
-            );
-            out_file << d_hausdorff << "\t";
-            cout << d_hausdorff << "\t";
-        }
-        out_file << endl;
-        cout << endl;
-    }
-    chrono::steady_clock::time_point d2_end = chrono::steady_clock::now();
-    cout << "Done computing pairwise d2 in " 
-         << chrono::duration_cast<chrono::microseconds>(d2_end - d2_begin).count() << endl;
-
-    out_file << endl;
 
     cout << "Computing pairwise dE..." << endl;
     chrono::steady_clock::time_point dE_begin = chrono::steady_clock::now();
+    float maxScale = 0.0;
+    for (const auto& sl : supports) {
+        for (const auto& s : sl) {
+            for (int i = 0; i < supports[0][0].size(); i++) {
+                for (int j = i; j < supports[0][0].size(); j++) {
+                    maxScale = max(maxScale, s.at(i, j).second);
+                }
+            }
+        }
+    }
+    vector<vector<float>> dE_matrix(n_files, vector<float>(n_files, 0.0));
+    int dE_tile_size = 4;
+    int dE_n_tiles = (n_files+dE_tile_size-1) / dE_tile_size;
+    for (int tile_i = 0; tile_i < n_files; tile_i += dE_tile_size) {
+        vector<vector<SupportRepnDE>> flock_1_repns;
+        for (int k = tile_i; k < min(n_files, tile_i + dE_tile_size); k++) {
+            flock_1_repns.push_back(dE_cvt_supps(supports[k], maxScale, scale_deltas));
+        }
+        for (int tile_j = 0; tile_j < n_files; tile_j += dE_tile_size) {
+            vector<vector<SupportRepnDE>> flock_2_repns;
+            for (int k = tile_j; k < min(n_files, tile_j + dE_tile_size); k++) {
+                flock_2_repns.push_back(dE_cvt_supps(supports[k], maxScale, scale_deltas));
+            }
+            for (int flock_1 = tile_i; flock_1 < min(n_files, tile_i + dE_tile_size); flock_1++) {
+                for (int flock_2 = tile_j; flock_2 < min(n_files, tile_j + dE_tile_size); flock_2++) {
+                    if (flock_2 <= flock_1) {
+                        continue;
+                    }
+                    float d_hausdorff = compute_dH(
+                        flock_1_repns[flock_1 - tile_i], flock_2_repns[flock_2 - tile_j],
+                        scale_deltas[flock_1], scale_deltas[flock_2],
+                        compute_dE_quadratic
+                    );
+                    dE_matrix[flock_1][flock_2] = d_hausdorff;
+                    dE_matrix[flock_2][flock_1] = d_hausdorff;
+                    cout << "Computed dE(" << flock_1 << ", " << flock_2 << ") = " << d_hausdorff << endl;
+                }
+            }
+        }
+    }
+    /*
     for (int flock_1 = 0; flock_1 < n_files; flock_1++) {
-        for (int flock_2 = flock_1 + 1; flock_2 < n_files; flock_2++) {
-            auto flock_1_repn = dE_cvt_supps(supports, scale_deltas, flock_1);
+        auto flock_1_repn = dE_cvt_supps(supports, scale_deltas, flock_1);
+        for (int flock_2 = 0; flock_2 < n_files; flock_2++) {
+            if (flock_2 <= flock_1) {
+                cout << "-\t";
+                continue;
+            }
             auto flock_2_repn = dE_cvt_supps(supports, scale_deltas, flock_2);
             float d_hausdorff = compute_dH(
-                flock_1_repn, flock_2_repn, 
+                flock_1_repn, flock_2_repn,
                 scale_deltas[flock_1], scale_deltas[flock_2],
                 compute_dE_quadratic
             );
-            out_file << d_hausdorff << "\t";
+            dE_matrix[flock_1][flock_2] = d_hausdorff;
+            dE_matrix[flock_2][flock_1] = d_hausdorff;
             cout << d_hausdorff << "\t";
         }
-        out_file << endl;
         cout << endl;
     }
+    */
+    for (const auto& row : dE_matrix) {
+        for (const auto& elem : row) {
+            out_file << elem << "\t";
+        }
+        out_file << endl;
+    }
     chrono::steady_clock::time_point dE_end = chrono::steady_clock::now();
-    cout << "Done computing pairwise dE in " 
+    cout << "Done computing pairwise dE in "
          << chrono::duration_cast<chrono::microseconds>(dE_end - dE_begin).count() << endl;
+    
+    out_file << endl;
+
+    cout << "Computing pairwise d2..." << endl;
+    chrono::steady_clock::time_point d2_begin = chrono::steady_clock::now();
+    vector<vector<float>> d2_matrix(n_files, vector<float>(n_files, 0.0));
+    for (int flock_1 = 0; flock_1 < n_files; flock_1++) {
+        for (int flock_2 = 0; flock_2 < n_files; flock_2++) {
+            if (flock_2 <= flock_1) {
+                cout << "-\t";
+                continue;
+            }
+            float d_hausdorff = compute_dH(
+                supports[flock_1], supports[flock_2],
+                scale_deltas[flock_1], scale_deltas[flock_2],
+                compute_d2_dummy
+            );
+            d2_matrix[flock_1][flock_2] = d_hausdorff;
+            d2_matrix[flock_2][flock_1] = d_hausdorff;
+            cout << d_hausdorff << "\t";
+        }
+        cout << endl;
+    }
+    for (const auto& row : d2_matrix) {
+        for (const auto& elem : row) {
+            out_file << elem << "\t";
+        }
+        out_file << endl;
+    }
+    chrono::steady_clock::time_point d2_end = chrono::steady_clock::now();
+    cout << "Done computing pairwise d2 in "
+         << chrono::duration_cast<chrono::microseconds>(d2_end - d2_begin).count() << endl;
 
     out_file.close();
     return 0;
 }
-
