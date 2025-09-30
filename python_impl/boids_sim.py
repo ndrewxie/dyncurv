@@ -164,15 +164,19 @@ class Flock:
     def simulate(self, num_steps, num_equilib_steps=0, filename=None, scale=0.01, write_every_n=1):
         if filename is not None:
             f = open(filename, "a")
+            g = open(filename + ".old", "w")
             f.write(f"{self.num_pts}\n{scale}\n{self.width} {self.height}\n")
+            g.write(f"{self.num_pts}\n")
         for step_num in range(num_equilib_steps + num_steps):
             self.step()
             if step_num < num_equilib_steps:
                 continue
             if (filename is not None) and (step_num % write_every_n == 0):
                 np.savetxt(f, self.position, fmt='%.8f', newline='\n')
+                np.savetxt(g, self.position, fmt='%.8f', newline='\n')
         if filename is not None:
             f.close()
+            g.close()
 
 
 
