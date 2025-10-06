@@ -21,8 +21,8 @@ def gen_betti():
         for i in range(10):
             infile = Path('.') / f'behavior{k}' / f'flock{i}.txt.old'
             outdir = Path('.') / 'betti' / f'behavior{k}'
-            run([sys.executable, str(rg_0), str(infile), str(outdir / f'flock{i}_h0.txt'), '0', '300', '10', '30'])
-            run([sys.executable, str(rg_1), str(infile), str(outdir / f'flock{i}_h1.txt'), '0', '300', '30', '10', '1'])
+            run([sys.executable, str(rg_0), str(infile), str(outdir / f'flock{i}_h0.txt'), '0', '300', '6', '50'])
+            run([sys.executable, str(rg_1), str(infile), str(outdir / f'flock{i}_h1.txt'), '0', '300', '20', '15', '1'])
 
 def collect(h):
     files = []
@@ -44,7 +44,7 @@ def distmat(files, out, script_name):
         for row in m:
             f.write(" ".join(map(str, row)) + "\n")
 
-#clear_betti()
+clear_betti()
 gen_betti()
 h0 = collect(0)
 h1 = collect(1)

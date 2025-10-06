@@ -19,8 +19,8 @@ def metric_1_nn(dist_mat):
             cluster_label = np.argmin(center_dists)
             if true_label == cluster_label:
                 n_correct += 1
-        c_metric = max(c_metric, float(n_correct) / float(N_PTS))
-    return c_metric
+        c_metric += float(n_correct) / float(N_PTS)
+    return c_metric / float(N_TRIALS)
 
 dE_0_r, d2_0_r = read_mats("dist_mat_0.dat")
 dE_1_r, d2_1_r = read_mats("dist_mat_1.dat")

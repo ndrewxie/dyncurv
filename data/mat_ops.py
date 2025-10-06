@@ -17,8 +17,8 @@ def write_matrix(path, mat):
             f.write(" ".join(f"{float(x):.9g}" for x in row) + "\n")
 
 def rescale_mats(A, B):
-    gA = np.mean(A)
-    gB = np.mean(B)
+    gA = np.exp(np.mean(np.log(A[A != 0])))
+    gB = np.exp(np.mean(np.log(B[B != 0])))
     if gA == 0.0:
         gA = float(np.mean(A))
     if gB == 0.0:
