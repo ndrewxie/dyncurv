@@ -2,7 +2,11 @@ import subprocess
 import sys
 from pathlib import Path
 
+print("Script start")
+
 def run(cmd):
+    print("RUNNING COMMAND: ")
+    print(" ".join(cmd))
     return subprocess.run(cmd, stdout=subprocess.PIPE, text=True).stdout
 
 def clear_betti():
@@ -22,7 +26,7 @@ def gen_betti():
             infile = Path('.') / f'behavior{k}' / f'flock{i}.txt.old'
             outdir = Path('.') / 'betti' / f'behavior{k}'
             run([sys.executable, str(rg_0), str(infile), str(outdir / f'flock{i}_h0.txt'), '0', '300', '6', '50'])
-            run([sys.executable, str(rg_1), str(infile), str(outdir / f'flock{i}_h1.txt'), '0', '300', '20', '15', '1'])
+            run([sys.executable, str(rg_1), str(infile), str(outdir / f'flock{i}_h1.txt'), '0', '300', '25', '12', '1'])
 
 def collect(h):
     files = []
@@ -45,6 +49,7 @@ def distmat(files, out, script_name):
             f.write(" ".join(map(str, row)) + "\n")
 
 clear_betti()
+print("Starting betti generation")
 gen_betti()
 h0 = collect(0)
 h1 = collect(1)
