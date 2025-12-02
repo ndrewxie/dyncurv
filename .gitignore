@@ -1,0 +1,9 @@
+*.txt
+*.mp4
+*.html
+*.old
+cpp_impl/a.out
+cpp_impl/dyncurv.exe
+cpp_impl/dyncurv
+__pycache__/
+data/betti/**
